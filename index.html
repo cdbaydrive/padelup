@@ -944,7 +944,7 @@
     </div>
   </div>
 
-  <!-- Overlay Réglages (Import / Export) -->
+  <!-- Overlay Réglages (Import / Export + Mode Test) -->
   <div id="settings-overlay" class="live-overlay hidden" onclick="if(event.target===this)closeSettingsOverlay()">
     <div class="live-modal">
       <button class="live-close" onclick="closeSettingsOverlay()" aria-label="Fermer">×</button>
@@ -956,6 +956,21 @@
         <button type="button" class="btn-secondary" onclick="exportArchive(); closeSettingsOverlay();">Exporter (.txt)</button>
         <button type="button" class="btn-secondary" onclick="document.getElementById('import-file').click()">Importer (.json / .txt)</button>
       </div>
+
+      <div style="margin-top:20px; padding:14px; background:#fff7ed; border:1px solid #fdba74; border-radius:10px;">
+        <label style="display:flex; align-items:flex-start; gap:10px; cursor:pointer; font-size:0.95rem;">
+          <input type="checkbox" id="test-mode-toggle" style="margin-top:3px; width:18px; height:18px; accent-color:#f97316;" onchange="toggleTestMode(this.checked)">
+          <span>
+            <strong style="color:#c2410c;">Mode test</strong><br>
+            <span style="font-size:0.82rem; color:var(--text-muted); line-height:1.35;">
+              Utilise le chemin Firebase <code>/archive_test</code> au lieu de <code>/archive</code>.
+              L’historique de production n’est jamais modifié. Idéal pour valider le mode Match à 4.
+            </span>
+          </span>
+        </label>
+        <p id="test-mode-status" style="font-size:0.8rem; margin-top:10px; color:var(--text-muted);"></p>
+      </div>
+
       <p style="font-size:0.75rem; color:var(--text-muted); margin-top:14px; text-align:center;">
         L’import fusionne les tournois absents (pas d’écrasement total).
       </p>
@@ -1018,12 +1033,77 @@
     let sessionFinished4 = false;
 
     // ========== ARCHIVE CLOUD (Firebase Realtime Database) ==========
-    // Source de vérité unique : nœud /archive
+    // Source de vérité unique : nœud /archive  (ou /archive_test en mode test)
     // Shape : { tournaments: [], knownPlayers: [], eloRatings: {}, updatedAt }
     let cloudData = { tournaments: [], knownPlayers: [], eloRatings: {} };
     let archiveReady = false;
     let archiveListener = null;
     let suppressArchivePush = false; // true pendant l'application d'un snapshot distant
+
+    // ===== Mode Test (chemin /archive_test) =====
+    let isTestMode = localStorage.getItem('padelup_test_mode') === '1';
+
+    function getArchivePath() {
+      return isTestMode ? 'archive_test' : 'archive';
+    }
+
+    function getArchiveRef() {
+      if (!firebaseDb) return null;
+      return firebaseDb.ref(getArchivePath());
+    }
+
+    function toggleTestMode(enabled) {
+      const previousPath = isTestMode ? 'archive_test' : 'archive';
+      isTestMode = !!enabled;
+      localStorage.setItem('padelup_test_mode', isTestMode ? '1' : '0');
+      updateTestModeUI();
+
+      // Débrancher l'ancien listener puis rebrancher sur le nouveau chemin
+      if (firebaseDb) {
+        try {
+          firebaseDb.ref(previousPath).off('value');
+        } catch (e) { /* ignore */ }
+        archiveListener = null;
+      }
+      archiveReady = false;
+      cloudData = { tournaments: [], knownPlayers: [], eloRatings: {} };
+      startArchiveSync();
+
+      // Rafraîchir les vues
+      renderArchiveForMode(4);
+      renderArchiveForMode(5);
+      renderArchiveForMode(8);
+      if (document.getElementById('panel-fip')?.classList.contains('active')) renderFIP();
+    }
+
+    function updateTestModeUI() {
+      const toggle = document.getElementById('test-mode-toggle');
+      if (toggle) toggle.checked = isTestMode;
+
+      // Bannière visuelle en haut de page
+      let banner = document.getElementById('test-mode-banner');
+      if (isTestMode) {
+        if (!banner) {
+          banner = document.createElement('div');
+          banner.id = 'test-mode-banner';
+          banner.style.cssText = 'background:#fff7ed;border:1px solid #fdba74;color:#c2410c;text-align:center;padding:8px 12px;font-weight:700;font-size:0.9rem;border-radius:8px;margin-bottom:12px;';
+          banner.textContent = '🧪 MODE TEST — Firebase Firebase /archive_test (production intacte)';
+          const h1 = document.querySelector('h1');
+          if (h1) h1.parentNode.insertBefore(banner, h1.nextSibling);
+        }
+        banner.style.display = '';
+      } else if (banner) {
+        banner.style.display = 'none';
+      }
+
+      const status = document.getElementById('test-mode-status');
+      if (status) {
+        status.textContent = isTestMode
+          ? '✓ Mode test actif — les écritures vont vers /archive_test'
+          : 'Mode production — les écritures vont vers /archive';
+        status.style.color = isTestMode ? '#c2410c' : 'var(--text-muted)';
+      }
+    }
 
     function loadData() {
       return cloudData;
@@ -1048,7 +1128,8 @@
         eloRecalculated: !!cloudData.eloRecalculated,
         updatedAt: Date.now()
       };
-      firebaseDb.ref('archive').set(payload).catch(err => console.warn('Archive push error', err));
+      const ref = getArchiveRef();
+      if (ref) ref.set(payload).catch(err => console.warn('Archive push error', err));
     }
 
     function applyArchiveSnapshot(val) {
@@ -1222,7 +1303,9 @@
         return;
       }
       if (archiveListener) return; // déjà branché
-      archiveListener = firebaseDb.ref('archive').on('value', snap => {
+      const ref = getArchiveRef();
+      if (!ref) return;
+      archiveListener = ref.on('value', snap => {
         applyArchiveSnapshot(snap.val());
       }, err => {
         console.error('Archive listener error', err);
@@ -3168,6 +3251,7 @@
 
     function openSettingsOverlay() {
       document.getElementById('settings-overlay').classList.remove('hidden');
+      updateTestModeUI();
     }
 
     function closeSettingsOverlay() {
@@ -3175,7 +3259,7 @@
     }
 
     function clearArchive() {
-      if (!confirm('Effacer TOUT l\'historique des tournois, la liste des joueurs connus et les ratings ELO ? Cette action est irréversible (Firebase).')) return;
+      if (!confirm(`Effacer TOUT l'historique des tournois, la liste des joueurs connus et les ratings ELO ?\n\nChemin Firebase concerné : /${getArchivePath()}\nCette action est irréversible.`)) return;
       saveData({ tournaments: [], knownPlayers: [], eloRatings: {} });
       renderArchiveForMode(8);
       renderArchiveForMode(5);
@@ -3639,14 +3723,21 @@
             eloRatings,
             updatedAt: Date.now()
           };
-          firebaseDb.ref('archive').set(payload).then(() => {
+          const ref = getArchiveRef();
+          if (!ref) {
+            status.textContent = 'Firebase indisponible.';
+            status.style.color = '#dc2626';
+            return;
+          }
+          status.textContent = 'Écriture dans Firebase (/' + getArchivePath() + ')…';
+          ref.set(payload).then(() => {
             cloudData = { tournaments, knownPlayers, eloRatings };
             archiveReady = true;
             renderArchiveForMode(8);
             renderArchiveForMode(5);
-      renderArchiveForMode(4);
+            renderArchiveForMode(4);
             if (document.getElementById('panel-fip').classList.contains('active')) renderFIP();
-            status.textContent = `✅ Migration réussie : ${tournaments.length} tournoi(s), ${knownPlayers.length} joueur(s). Tu peux fermer et retirer ?migrate=1 de l’URL.`;
+            status.textContent = `✅ Migration réussie vers /${getArchivePath()} : ${tournaments.length} tournoi(s), ${knownPlayers.length} joueur(s).`;
             status.style.color = '#047857';
             fileInput.value = '';
           }).catch(err => {
@@ -3873,6 +3964,7 @@
     buildPlayerInputs(8);
     buildPlayerInputs(5);
     buildPlayerInputs(4);
+    updateTestModeUI(); // affiche la bannière si mode test déjà activé
 
     // Démarrer la synchro archive Firebase (source de vérité)
     startArchiveSync();

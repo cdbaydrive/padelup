@@ -47,12 +47,13 @@
     }
     .tab-btn {
       flex: 1;
-      padding: 12px 8px;
+      padding: 10px 6px;
       border: none;
       background: transparent;
       color: var(--text-muted);
       font-weight: 600;
-      font-size: 0.9rem;
+      font-size: 0.85rem;
+      line-height: 1.25;
       cursor: pointer;
       transition: all 0.2s;
       border-bottom: 3px solid transparent;
@@ -370,7 +371,7 @@
     .mini-rank.silver .name { color: var(--silver); font-weight: bold; }
     .mini-rank.bronze .name { color: var(--bronze); font-weight: bold; }
 
-    .hidden { display: none; }
+    .hidden { display: none !important; }
     .nav-buttons { display: flex; gap: 10px; margin-top: 12px; flex-wrap: wrap; }
     .btn-secondary { background: #e2e8f0; color: var(--text); }
     .btn-secondary:hover { background: #cbd5e1; }
@@ -390,6 +391,7 @@
     .error-msg { color: #dc2626; font-size: 0.9rem; text-align: center; margin-top: 8px; }
     .legend { font-size: 0.8rem; color: var(--text-muted); margin-top: 12px; text-align: center; }
     .actions-row { display: flex; gap: 10px; margin-top: 16px; flex-wrap: wrap; }
+    .actions-row.hidden { display: none !important; }
     .actions-row button { flex: 1; min-width: 140px; }
 
     .fip-table-wrap { overflow-x: auto; }
@@ -602,17 +604,17 @@
 <body>
 
   <h1><span style="color:#1e40af;">Padel</span> <span style="color:#f97316;">Up</span></h1>
-  <p class="subtitle" id="main-subtitle">Choisissez le mode • Match à 4 · Americano 5 &amp; 8</p>
+  <p class="subtitle" id="main-subtitle">Match à 4 • Sets (1 jeu = 4 pts)</p>
 
   <div class="tabs">
-    <button class="tab-btn" data-tab="4" onclick="switchTab('4')">Match à 4</button>
-    <button class="tab-btn" data-tab="5" onclick="switchTab('5')">Americano à 5</button>
-    <button class="tab-btn active" data-tab="8" onclick="switchTab('8')">Americano à 8</button>
-    <button class="tab-btn" data-tab="fip" onclick="switchTab('fip')">FIP Ranking</button>
+    <button class="tab-btn active" data-tab="4" onclick="switchTab('4')">Match<br>à 4</button>
+    <button class="tab-btn" data-tab="5" onclick="switchTab('5')">Americano<br>à 5</button>
+    <button class="tab-btn" data-tab="8" onclick="switchTab('8')">Americano<br>à 8</button>
+    <button class="tab-btn" data-tab="fip" onclick="switchTab('fip')">FIP<br>Ranking</button>
   </div>
 
   <!-- PANEL 4 -->
-  <div id="panel-4" class="tab-panel">
+  <div id="panel-4" class="tab-panel active">
     <div id="setup-card-4" class="card">
       <h2>Entrer les noms des 4 joueurs</h2>
       <div class="grid-setup" id="player-inputs-4"></div>
@@ -702,10 +704,14 @@
       <div id="post-set-actions-4" class="actions-row hidden" style="margin-top:16px;">
         <button class="btn-secondary" onclick="rematchSamePairs4()">Revanche ? (mêmes paires)</button>
         <button class="btn-secondary" onclick="changePairs4()">Changer de paires</button>
-        <button onclick="finishTournament4()">Terminer</button>
+        <button class="btn-secondary" onclick="finishTournament4()">Terminer</button>
+      </div>
+      <div id="two-zero-actions-4" class="actions-row hidden" style="margin-top:16px;">
+        <button class="btn-secondary" onclick="rematchSamePairs4()">Un autre set ?</button>
+        <button class="btn-secondary" onclick="finishTournament4()">Terminer</button>
       </div>
       <div id="decider-actions-4" class="actions-row hidden" style="margin-top:12px;">
-        <button onclick="playDecider4()">Jouer le set décisif</button>
+        <button class="btn-secondary" onclick="playDecider4()">Jouer le set décisif</button>
         <button class="btn-secondary" onclick="declareDraw4()">Arrêter ici et déclarer match nul</button>
       </div>
     </div>
@@ -739,7 +745,7 @@
   </div>
 
   <!-- PANEL 8 -->
-  <div id="panel-8" class="tab-panel active">
+  <div id="panel-8" class="tab-panel">
     <div id="setup-card-8" class="card">
       <h2>Entrer les noms des 8 joueurs</h2>
       <div class="grid-setup" id="player-inputs-8"></div>
@@ -1062,7 +1068,7 @@
       { teams: [[1, 2], [3, 4]], sit: 0 }
     ];
 
-    let currentMode = 8;
+    let currentMode = 4;
     let players = [];
     let currentRound = 0;
     let matchHistory = [];
@@ -1818,6 +1824,15 @@
       currentRound = 0;
       currentMode = mode;
 
+      // Réactiver le bouton Sauvegarder (grisé après une sauvegarde précédente)
+      const endActStart = document.getElementById(`end-actions-${mode}`);
+      if (endActStart) {
+        endActStart.querySelectorAll('button').forEach(btn => {
+          const onclickAttr = btn.getAttribute('onclick') || '';
+          if (onclickAttr.includes('saveCurrentTournament')) btn.disabled = false;
+        });
+      }
+
       // Reset mode 4 state
       pairs4 = null;
       setsScore4 = [0, 0];
@@ -1888,11 +1903,11 @@
         setsScore4 = [0, 0];
         currentSetNumber4 = 1;
         sessionFinished4 = false;
+        rebuildRoundCard4();
         renderCourt4();
         updateLeaderboard(4);
         updateHistory(4);
-        document.getElementById('post-set-actions-4')?.classList.add('hidden');
-        document.getElementById('decider-actions-4')?.classList.add('hidden');
+        hideAllPostSetActions4();
         startLiveSession();
         return;
       }
@@ -2672,6 +2687,19 @@
         </div>`;
     }
 
+    /** Rang dense (1,1,2,2…) selon points → diff → wins. Idéal Match à 4 (paires ex-aequo). */
+    function assignDenseRanks(sortedPlayers) {
+      let rank = 0;
+      let prev = null;
+      return sortedPlayers.map((p) => {
+        if (!prev || p.points !== prev.points || p.diff !== prev.diff || p.wins !== prev.wins) {
+          rank += 1;
+        }
+        prev = p;
+        return rank;
+      });
+    }
+
     function updateLeaderboard(mode) {
       const totalMatches = mode === 8 ? (petitesFinalesDone ? 8 : 7) : (mode === 5 ? 4 : (setsScore4[0] + setsScore4[1] || 1));
       const sorted = [...players].sort((a, b) => {
@@ -2680,15 +2708,19 @@
         return b.wins - a.wins;
       });
 
+      // Mode 4 : rangs denses (paire gagnante #1/#1, perdante #2/#2)
+      const ranks = (mode === 4) ? assignDenseRanks(sorted) : sorted.map((_, i) => i + 1);
+
       const tbody = document.getElementById(`leaderboard-body-${mode}`);
       tbody.innerHTML = '';
 
       sorted.forEach((player, index) => {
-        const rankClass = index === 0 ? 'rank-1' : index === 1 ? 'rank-2' : index === 2 ? 'rank-3' : '';
+        const r = ranks[index];
+        const rankClass = r === 1 ? 'rank-1' : r === 2 ? 'rank-2' : r === 3 ? 'rank-3' : '';
         const diffStr = player.diff > 0 ? `+${player.diff}` : `${player.diff}`;
         tbody.innerHTML += `
           <tr class="${rankClass}">
-            <td>#${index + 1}</td>
+            <td>#${r}</td>
             <td>${player.name}</td>
             <td>${player.played} / ${totalMatches}</td>
             <td>${player.wins}-${player.ties}-${player.losses}</td>
@@ -2744,13 +2776,16 @@
         return b.wins - a.wins;
       });
 
+      // Mode 4 : rangs denses par paire (gagnants #1+#1 / perdants #2+#2 ; match nul = plus de points → #1)
+      const ranks = (mode === 4) ? assignDenseRanks(sorted) : sorted.map((_, i) => i + 1);
+
       const tournament = {
         id: Date.now(),
         type: String(mode),
         season: new Date().getFullYear(),
         date: formatTournamentDate(new Date()),
         ranking: sorted.map((p, i) => ({
-          rank: i + 1,
+          rank: ranks[i],
           name: p.name,
           points: p.points,
           wins: p.wins,
@@ -2863,8 +2898,9 @@
             </div>
             <button class="btn-secondary" style="width:auto;padding:4px 10px;font-size:0.8rem; flex-shrink:0;" onclick="deleteTournament(${t.id})">Supprimer</button>
           </h3>
-          ${(t.ranking || []).slice(0, mode === 8 ? 8 : (mode === 5 ? 5 : 4)).map((p, i) => {
-            const cls = i === 0 ? 'gold' : i === 1 ? 'silver' : i === 2 ? 'bronze' : '';
+          ${(t.ranking || []).slice(0, mode === 8 ? 8 : (mode === 5 ? 5 : 4)).map((p) => {
+            const r = p.rank || 0;
+            const cls = r === 1 ? 'gold' : r === 2 ? 'silver' : r === 3 ? 'bronze' : '';
             const diffStr = p.diff > 0 ? `+${p.diff}` : p.diff;
             return `
               <div class="mini-rank ${cls}">
@@ -2911,9 +2947,10 @@
         if (b.diff !== a.diff) return b.diff - a.diff;
         return b.wins - a.wins;
       });
-      // Rang officiel (classement par défaut points/diff/wins) — stable même si on trie autrement
+      // Rang officiel dense (1,1,2,2…) : paires ex-aequo au Match à 4 restent à égalité dans le FIP
+      const denseRanks = assignDenseRanks(sorted);
       sorted.forEach((p, i) => {
-        p.officialRank = i + 1;
+        p.officialRank = denseRanks[i];
         p.winPct = p.matches > 0 ? (p.wins / p.matches) * 100 : -1;
         p.ppm = p.matches > 0 ? p.points / p.matches : -1;
         p.elo = getStoredElo(p.name);
@@ -3410,7 +3447,14 @@
       document.getElementById(`history-card-${mode}`).classList.add('hidden');
       document.getElementById(`archive-card-${mode}`).classList.remove('hidden');
       const endAct = document.getElementById(`end-actions-${mode}`);
-      if (endAct) endAct.style.display = 'none';
+      if (endAct) {
+        endAct.style.display = 'none';
+        // Réactiver Sauvegarder pour le prochain tournoi
+        endAct.querySelectorAll('button').forEach(btn => {
+          const onclickAttr = btn.getAttribute('onclick') || '';
+          if (onclickAttr.includes('saveCurrentTournament')) btn.disabled = false;
+        });
+      }
       players = [];
       matchHistory = [];
       tournamentFinished = false;
@@ -3805,6 +3849,55 @@
 
     // ========== MODE 4 — Match à 4 ==========
 
+    function rebuildRoundCard4() {
+      document.getElementById('round-card-4').innerHTML = `
+        <h2 id="round-title-4">Set 1</h2>
+        <div id="sets-score-4" style="text-align:center; font-weight:700; font-size:1.1rem; color:var(--court-bg); margin-bottom:12px;">Sets : 0 – 0</div>
+        <div class="court-grid" id="courts-4">
+          <div class="court">
+            <div class="court-header">
+              <span class="court-title">Terrain</span>
+              <div class="scores-prog-row">
+                <span class="prognostic-value" id="c1-prog-left-4">–</span>
+                <div class="scores-row-inner">
+                  <input type="number" id="c1-t1-score-4" class="score-input" min="0" max="20" placeholder="Jeux" oninput="updatePrognostic4()">
+                  <input type="number" id="c1-t2-score-4" class="score-input" min="0" max="20" placeholder="Jeux" oninput="updatePrognostic4()">
+                </div>
+                <span class="prognostic-value" id="c1-prog-right-4">–</span>
+              </div>
+            </div>
+            <div class="match-body">
+              <div class="team-side left">
+                <span class="player-name" id="c1-t1-p1-4"></span>
+                <span class="player-name" id="c1-t1-p2-4"></span>
+              </div>
+              <div class="vs-badge">VS</div>
+              <div class="team-side right">
+                <span class="player-name" id="c1-t2-p1-4"></span>
+                <span class="player-name" id="c1-t2-p2-4"></span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div id="error-message-4" class="error-msg"></div>
+        <div class="nav-buttons">
+          <button onclick="submitSet4()">Enregistrer le set</button>
+        </div>
+        <div id="post-set-actions-4" class="actions-row hidden" style="margin-top:16px;">
+          <button class="btn-secondary" onclick="rematchSamePairs4()">Revanche ? (mêmes paires)</button>
+          <button class="btn-secondary" onclick="changePairs4()">Changer de paires</button>
+          <button class="btn-secondary" onclick="finishTournament4()">Terminer</button>
+        </div>
+        <div id="two-zero-actions-4" class="actions-row hidden" style="margin-top:16px;">
+          <button class="btn-secondary" onclick="rematchSamePairs4()">Un autre set ?</button>
+          <button class="btn-secondary" onclick="finishTournament4()">Terminer</button>
+        </div>
+        <div id="decider-actions-4" class="actions-row hidden" style="margin-top:12px;">
+          <button class="btn-secondary" onclick="playDecider4()">Jouer le set décisif</button>
+          <button class="btn-secondary" onclick="declareDraw4()">Arrêter ici et déclarer match nul</button>
+        </div>`;
+    }
+
     function renderCourt4() {
       if (!pairs4) return;
       const t1 = pairs4.team1, t2 = pairs4.team2;
@@ -3829,12 +3922,17 @@
 
       updatePrognostic4();
       document.getElementById('error-message-4').textContent = '';
-      document.getElementById('post-set-actions-4')?.classList.add('hidden');
-      document.getElementById('decider-actions-4')?.classList.add('hidden');
+      hideAllPostSetActions4();
       // Re-enable score inputs + submit button
       document.querySelectorAll('#round-card-4 .score-input').forEach(i => { i.disabled = false; });
       const submitBtn = document.querySelector('#round-card-4 .nav-buttons button');
       if (submitBtn) submitBtn.style.display = '';
+    }
+
+    function hideAllPostSetActions4() {
+      document.getElementById('post-set-actions-4')?.classList.add('hidden');
+      document.getElementById('two-zero-actions-4')?.classList.add('hidden');
+      document.getElementById('decider-actions-4')?.classList.add('hidden');
     }
 
     function updatePrognostic4() {
@@ -3918,48 +4016,46 @@
       const submitBtn = document.querySelector('#round-card-4 .nav-buttons button');
       if (submitBtn) submitBtn.style.display = 'none';
 
-      // Show next actions
-      const totalSets = setsScore4[0] + setsScore4[1];
-      if (setsScore4[0] === 1 && setsScore4[1] === 1) {
-        document.getElementById('decider-actions-4').classList.remove('hidden');
-        document.getElementById('post-set-actions-4').classList.add('hidden');
-      } else {
-        document.getElementById('post-set-actions-4').classList.remove('hidden');
-        document.getElementById('decider-actions-4').classList.add('hidden');
-      }
-
       document.getElementById('sets-score-4').textContent = `Sets : ${setsScore4[0]} – ${setsScore4[1]}`;
+
+      // Jamais de fin auto : l'utilisateur doit cliquer Terminer pour proposer la sauvegarde
+      hideAllPostSetActions4();
+      const s0 = setsScore4[0], s1 = setsScore4[1];
+      if (s0 === 1 && s1 === 1) {
+        // Exactement 1-1 → set décisif ou match nul
+        document.getElementById('decider-actions-4')?.classList.remove('hidden');
+      } else if (Math.max(s0, s1) >= 2) {
+        // 2-0, 2-1, 1-2, 3-1… → Un autre set ? + Terminer
+        document.getElementById('two-zero-actions-4')?.classList.remove('hidden');
+      } else {
+        // 1-0 seulement → Revanche / Changer de paires / Terminer
+        document.getElementById('post-set-actions-4')?.classList.remove('hidden');
+      }
     }
 
     function rematchSamePairs4() {
-      document.getElementById('post-set-actions-4').classList.add('hidden');
-      document.getElementById('decider-actions-4').classList.add('hidden');
+      hideAllPostSetActions4();
       renderCourt4();
     }
 
     function playDecider4() {
-      document.getElementById('decider-actions-4').classList.add('hidden');
+      hideAllPostSetActions4();
       renderCourt4();
     }
 
     function declareDraw4() {
-      // Both pairs get a tie for the "virtual" third set? Or just finish.
-      // We simply finish the session with current sets (1-1).
+      // Match nul 1-1 : classement par points (paire qui a marqué le plus → #1)
       finishTournament4(true);
     }
 
     function changePairs4() {
-      // Go back to setup but keep the 4 players names and current accumulated stats? 
-      // Simpler: treat as new session start with same players, reset sets but keep points? 
-      // Per user: "Changer de paires" → back to pair selection with same 4 names.
+      // Retour au setup paires, mêmes 4 noms (stats de session conservées jusqu'au prochain startTournament)
       document.getElementById('round-card-4').classList.add('hidden');
       document.getElementById('setup-card-4').classList.remove('hidden');
-      // Pre-fill names
       players.forEach((p, i) => {
         const inp = document.getElementById(`p4-${i}`);
         if (inp) inp.value = p.name;
       });
-      // Show free pairs UI if needed
       document.getElementById('pair-free-4').checked = true;
       document.getElementById('free-pairs-setup-4').classList.remove('hidden');
       populateFreePairSelects4();
@@ -3979,11 +4075,26 @@
     function finishTournament4(isDraw) {
       sessionFinished4 = true;
       tournamentFinished = true;
-      document.getElementById('post-set-actions-4')?.classList.add('hidden');
-      document.getElementById('decider-actions-4')?.classList.add('hidden');
-      document.getElementById('round-title-4').textContent = isDraw ? 'Match nul (1-1)' : 'Match terminé';
-      document.getElementById('end-actions-4').style.display = 'flex';
-      // Auto-save is optional; user clicks Sauvegarder
+      hideAllPostSetActions4();
+
+      // Comme l'Americano : masquer le terrain, afficher "Tournoi terminé"
+      const title = isDraw ? 'Match nul (1-1)' : 'Tournoi terminé !';
+      document.getElementById('round-card-4').innerHTML = `
+        <h2 style="text-align:center; color: var(--accent);">🏆 ${title} 🏆</h2>
+        <p style="text-align:center; color:var(--text-muted); margin-top:8px;">
+          Sets : ${setsScore4[0]} – ${setsScore4[1]} · Classement final ci-dessous
+        </p>`;
+
+      const endAct = document.getElementById('end-actions-4');
+      if (endAct) {
+        endAct.style.display = 'flex';
+        // Réactiver "Sauvegarder" (peut avoir été grisé après une sauvegarde précédente)
+        endAct.querySelectorAll('button').forEach(btn => {
+          const onclickAttr = btn.getAttribute('onclick') || '';
+          if (onclickAttr.includes('saveCurrentTournament')) btn.disabled = false;
+        });
+      }
+      document.getElementById('archive-card-4')?.classList.remove('hidden');
       updateLeaderboard(4);
       pushLiveState();
     }

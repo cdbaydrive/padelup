@@ -3245,7 +3245,7 @@
       }
 
       const pointSpacing = 50;
-      const leftPad = 34, rightPad = 20, topPad = 20, bottomPad = 26;
+      const leftPad = 34, rightPad = 36, topPad = 20, bottomPad = 26;
       const plotHeight = 100;
       const width = leftPad + rightPad + Math.max(0, series.length - 1) * pointSpacing;
       const height = topPad + plotHeight + bottomPad;
@@ -3253,10 +3253,21 @@
       const xFor = i => leftPad + i * pointSpacing;
       const yFor = pct => topPad + ((100 - pct) / 100) * plotHeight;
 
+      // Moyenne des % de victoire (ligne de référence horizontale)
+      const avgPct = series.reduce((sum, s) => sum + s.pct, 0) / series.length;
+      const avgY = yFor(avgPct);
+      const avgLabel = (Math.round(avgPct * 10) / 10).toFixed(1) + '%';
+
       const gridLines = [0, 50, 100].map(v => `
         <line x1="${leftPad}" y1="${yFor(v)}" x2="${width - rightPad}" y2="${yFor(v)}" stroke="#e2e8f0" stroke-width="1" />
         <text x="${leftPad - 6}" y="${yFor(v) + 3}" text-anchor="end" font-size="9" fill="#64748b">${v}%</text>
       `).join('');
+
+      const avgLine = `
+        <line x1="${leftPad}" y1="${avgY}" x2="${width - rightPad}" y2="${avgY}"
+          stroke="#f97316" stroke-width="1.5" stroke-dasharray="5 4" />
+        <text x="${width - rightPad + 4}" y="${avgY + 3}" text-anchor="start" font-size="9" fill="#f97316" font-weight="600">${avgLabel}</text>
+      `;
 
       const points = series.map((s, i) => ({ x: xFor(i), y: yFor(s.pct), pct: s.pct, label: s.label }));
       const polylinePoints = points.map(p => `${p.x},${p.y}`).join(' ');
@@ -3270,6 +3281,7 @@
       return `
         <svg viewBox="0 0 ${width} ${height}" width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg">
           ${gridLines}
+          ${avgLine}
           <polyline points="${polylinePoints}" fill="none" stroke="#059669" stroke-width="2" />
           ${dotsAndLabels}
         </svg>`;

@@ -560,6 +560,39 @@
       font-weight: 400;
       color: var(--text-muted);
     }
+
+    /* FIP : échelle ELO + légende tableau — empilés sur mobile, ligne sur desktop */
+    .elo-scale-levels {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px 16px;
+      font-size: 0.82rem;
+      color: var(--text);
+    }
+    .fip-table-legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px 0;
+      justify-content: center;
+      align-items: center;
+    }
+    .fip-table-legend span:not(:last-child)::after {
+      content: " • ";
+      white-space: pre;
+    }
+    @media (max-width: 640px) {
+      .elo-scale-levels {
+        flex-direction: column;
+        gap: 6px;
+      }
+      .fip-table-legend {
+        flex-direction: column;
+        gap: 6px;
+      }
+      .fip-table-legend span:not(:last-child)::after {
+        content: none;
+      }
+    }
   </style>
 
   <!-- Firebase SDK (compat) -->
@@ -894,14 +927,13 @@
           <option value="2026">2026</option>
           <option value="all">Toutes saisons</option>
         </select>
-        <span class="legend" style="margin:0;">1 jeu (à 4) = 4 pts • Americano = score saisi • ELO global (non reset)</span>
       </div>
       <div class="fip-table-wrap">
         <div id="fip-leaderboard"></div>
       </div>
       <div class="elo-scale-legend" style="margin-top:20px; padding:14px 16px; background:#f8fafc; border:1px solid var(--border); border-radius:10px;">
         <p style="font-size:0.85rem; font-weight:600; color:var(--court-bg); margin-bottom:10px;">Échelle ELO (0–10)</p>
-        <div style="display:flex; flex-wrap:wrap; gap:8px 16px; font-size:0.82rem; color:var(--text);">
+        <div class="elo-scale-levels">
           <span><strong>0.0–3.0</strong> → Débutant</span>
           <span><strong>3.0–5.0</strong> → Intermédiaire</span>
           <span><strong>5.0–7.0</strong> → Avancé</span>
@@ -3054,7 +3086,7 @@
             }).join('')}
           </tbody>
         </table>
-        <p class="legend">% Victoire = Victoires ÷ Matchs joués • Pts/match = Points totaux ÷ Matchs joués • Cliquez sur un titre de colonne pour trier</p>`;
+        <p class="legend fip-table-legend"><span>% Victoire = Victoires ÷ Matchs joués</span><span>Pts/match = Points totaux ÷ Matchs joués</span><span>Cliquez sur un titre de colonne pour trier</span></p>`;
 
       container.onclick = function(e) {
         const thEl = e.target.closest('th.sortable');

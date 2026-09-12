@@ -421,6 +421,8 @@
       background: #fff; border-radius: 16px; padding: 24px;
       max-width: 420px; width: 100%; position: relative;
       box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+      box-sizing: border-box;
+      overflow: hidden;
     }
     .live-modal h3 { color: var(--court-bg); margin-bottom: 8px; font-size: 1.2rem; }
     .live-modal p { color: var(--text-muted); font-size: 0.9rem; margin-bottom: 16px; }
@@ -610,7 +612,7 @@
     <button class="tab-btn active" data-tab="4" onclick="switchTab('4')">Match<br>à 4</button>
     <button class="tab-btn" data-tab="5" onclick="switchTab('5')">Americano<br>à 5</button>
     <button class="tab-btn" data-tab="8" onclick="switchTab('8')">Americano<br>à 8</button>
-    <button class="tab-btn" data-tab="fip" onclick="switchTab('fip')">FIP<br>Ranking</button>
+    <button class="tab-btn" data-tab="fip" onclick="switchTab('fip')">Padel <span style="color:#f97316;">Up</span><br>Ranking</button>
   </div>
 
   <!-- PANEL 4 -->
@@ -926,7 +928,7 @@
   <!-- PANEL FIP -->
   <div id="panel-fip" class="tab-panel">
     <div class="card">
-      <h2>Classement FIP</h2>
+      <h2>Classement Joueurs</h2>
       <div style="display:flex; flex-wrap:wrap; gap:12px; align-items:center; margin-bottom:14px;">
         <label style="font-size:0.9rem; color:var(--text-muted);">Saison</label>
         <select id="fip-season-select" onchange="renderFIP()" style="padding:8px 12px; border:1px solid var(--border); border-radius:8px; font-size:0.95rem; background:#f8fafc;">
@@ -947,6 +949,17 @@
           <span><strong>9.0–10.0</strong> → Elite</span>
         </div>
       </div>
+    </div>
+
+    <!-- Classement Paires -->
+    <div class="card" style="margin-top:20px;">
+      <h2>Classement Paires</h2>
+      <div class="fip-table-wrap">
+        <div id="fip-pairs-leaderboard"></div>
+      </div>
+      <p class="legend" style="margin-top:12px; text-align:center;">
+        Score Duo = (% Victoire × 0.5) + (Diff normalisé × 0.5) · Toutes les paires sont affichées
+      </p>
     </div>
   </div>
 
@@ -1000,32 +1013,78 @@
   <div id="settings-overlay" class="live-overlay hidden" onclick="if(event.target===this)closeSettingsOverlay()">
     <div class="live-modal">
       <button class="live-close" onclick="closeSettingsOverlay()" aria-label="Fermer">×</button>
-      <h3>⚙ Réglages</h3>
-      <p style="color:var(--text-muted); font-size:0.9rem; margin-bottom:8px;">
-        Sauvegarde de secours ou restauration de l’historique Firebase.
-      </p>
-      <div class="settings-actions">
-        <button type="button" class="btn-secondary" onclick="exportArchive(); closeSettingsOverlay();">Exporter (.txt)</button>
-        <button type="button" class="btn-secondary" onclick="document.getElementById('import-file').click()">Importer (.json / .txt)</button>
+
+      <!-- Écran PIN -->
+      <div id="settings-pin-screen">
+        <h3>⚙ Réglages</h3>
+        <p style="color:var(--text-muted); font-size:0.9rem; margin-bottom:16px;">
+          Accès protégé. Entrez le code PIN.
+        </p>
+        <input type="password" id="settings-pin-input" maxlength="4" inputmode="numeric" pattern="[0-9]*"
+          placeholder="••••" autocomplete="off"
+          style="width:100%; max-width:100%; box-sizing:border-box; padding:14px 12px; border:1px solid var(--border); border-radius:8px; font-size:1.5rem; text-align:center; letter-spacing:0.5em; background:#f8fafc;"
+          oninput="onSettingsPinInput(this)"
+          onkeydown="if(event.key==='Enter')checkSettingsPin()">
+        <p id="settings-pin-error" style="color:#dc2626; font-size:0.85rem; text-align:center; min-height:1.2em; margin-top:10px;"></p>
       </div>
 
-      <div style="margin-top:20px; padding:14px; background:#fff7ed; border:1px solid #fdba74; border-radius:10px;">
-        <label style="display:flex; align-items:flex-start; gap:10px; cursor:pointer; font-size:0.95rem;">
-          <input type="checkbox" id="test-mode-toggle" style="margin-top:3px; width:18px; height:18px; accent-color:#f97316;" onchange="toggleTestMode(this.checked)">
-          <span>
-            <strong style="color:#c2410c;">Mode test</strong><br>
-            <span style="font-size:0.82rem; color:var(--text-muted); line-height:1.35;">
-              Utilise le chemin Firebase <code>/archive_test</code> au lieu de <code>/archive</code>.
-              L’historique de production n’est jamais modifié. Idéal pour valider le mode Match à 4.
+      <!-- Contenu Réglages (après PIN) -->
+      <div id="settings-content" class="hidden">
+        <h3>⚙ Réglages</h3>
+        <p style="color:var(--text-muted); font-size:0.9rem; margin-bottom:8px;">
+          Sauvegarde de secours ou restauration de l’historique Firebase.
+        </p>
+        <div class="settings-actions">
+          <button type="button" class="btn-secondary" onclick="exportArchive(); closeSettingsOverlay();">Exporter (.txt)</button>
+          <button type="button" class="btn-secondary" onclick="document.getElementById('import-file').click()">Importer (.json / .txt)</button>
+        </div>
+
+        <div style="margin-top:20px; padding:14px; background:#fff7ed; border:1px solid #fdba74; border-radius:10px;">
+          <label style="display:flex; align-items:flex-start; gap:10px; cursor:pointer; font-size:0.95rem;">
+            <input type="checkbox" id="test-mode-toggle" style="margin-top:3px; width:18px; height:18px; accent-color:#f97316;" onchange="toggleTestMode(this.checked)">
+            <span>
+              <strong style="color:#c2410c;">Mode test</strong><br>
+              <span style="font-size:0.82rem; color:var(--text-muted); line-height:1.35;">
+                Utilise le chemin Firebase <code>/archive_test</code> au lieu de <code>/archive</code>.
+                L’historique de production n’est jamais modifié.
+              </span>
             </span>
-          </span>
-        </label>
-        <p id="test-mode-status" style="font-size:0.8rem; margin-top:10px; color:var(--text-muted);"></p>
-      </div>
+          </label>
+          <p id="test-mode-status" style="font-size:0.8rem; margin-top:10px; color:var(--text-muted);"></p>
+        </div>
 
-      <p style="font-size:0.75rem; color:var(--text-muted); margin-top:14px; text-align:center;">
-        L’import fusionne les tournois absents (pas d’écrasement total).
+        <div style="margin-top:20px; padding:14px; background:#f0fdf4; border:1px solid #bbf7d0; border-radius:10px;">
+          <p style="font-size:0.9rem; font-weight:600; color:#047857; margin-bottom:8px;">Nouvelle saison</p>
+          <p style="font-size:0.82rem; color:var(--text-muted); line-height:1.35; margin-bottom:12px;">
+            Aucune archive n’est supprimée. L’ELO reste intact.
+            Les classements se basent toujours sur le filtre de saison.
+          </p>
+          <button type="button" id="btn-close-season" class="btn-secondary" onclick="closeAndStartNewSeason()"
+            style="width:100%;">Clôturer &amp; démarrer une nouvelle saison</button>
+          <p id="close-season-status" style="font-size:0.8rem; margin-top:10px; color:var(--text-muted);"></p>
+        </div>
+
+        <p style="font-size:0.75rem; color:var(--text-muted); margin-top:14px; text-align:center;">
+          L’import fusionne les tournois absents (pas d’écrasement total).
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Popup PIN admin (réutilisable : suppression tournoi, etc.) -->
+  <div id="admin-pin-overlay" class="live-overlay hidden" onclick="if(event.target===this)closeAdminPinOverlay(false)">
+    <div class="live-modal">
+      <button class="live-close" onclick="closeAdminPinOverlay(false)" aria-label="Fermer">×</button>
+      <h3>🔒 Code admin</h3>
+      <p style="color:var(--text-muted); font-size:0.9rem; margin-bottom:16px;" id="admin-pin-message">
+        Entrez le code PIN pour confirmer cette action.
       </p>
+      <input type="password" id="admin-pin-input" maxlength="4" inputmode="numeric" pattern="[0-9]*"
+        placeholder="••••" autocomplete="off"
+        style="width:100%; max-width:100%; box-sizing:border-box; padding:14px 12px; border:1px solid var(--border); border-radius:8px; font-size:1.5rem; text-align:center; letter-spacing:0.5em; background:#f8fafc;"
+        oninput="onAdminPinInput(this)"
+        onkeydown="if(event.key==='Enter')submitAdminPin()">
+      <p id="admin-pin-error" style="color:#dc2626; font-size:0.85rem; text-align:center; min-height:1.2em; margin-top:10px;"></p>
     </div>
   </div>
 
@@ -1460,7 +1519,7 @@
 
       if (tab === 'fip') {
         renderFIP();
-        document.getElementById('main-subtitle').textContent = 'Classement FIP • Saison en cours';
+        document.getElementById('main-subtitle').textContent = 'Classement Joueurs & Paires • Saison en cours';
       } else {
         currentMode = parseInt(tab, 10);
         const subtitles = {
@@ -2913,6 +2972,144 @@
     }
 
     /**
+     * Calcule le classement des paires à partir de l'historique des matchs.
+     * Clé de paire = noms triés alphabétiquement joints par " & ".
+     * Score Duo = (% victoire × 0.5) + (Diff normalisé × 0.5)
+     * Diff normalisé = (Diff moyen + 16) / 32   (uniquement pour le score)
+     */
+    function computePairsRanking(archiveList) {
+      const pairs = {}; // key -> stats
+
+      archiveList.forEach(t => {
+        (t.matchHistory || []).forEach(round => {
+          (round.matches || []).forEach(m => {
+            const team1 = parseTeamNames(m.team1);
+            const team2 = parseTeamNames(m.team2);
+            if (!team1 || !team2) return;
+
+            const s1 = Number(m.score1);
+            const s2 = Number(m.score2);
+            if (isNaN(s1) || isNaN(s2)) return;
+
+            const sorted1 = team1.slice().sort((a, b) => a.localeCompare(b, 'fr'));
+            const sorted2 = team2.slice().sort((a, b) => a.localeCompare(b, 'fr'));
+            const key1 = sorted1.join(' & ');
+            const key2 = sorted2.join(' & ');
+
+            const ensure = (key, names) => {
+              if (!pairs[key]) {
+                pairs[key] = {
+                  name1: names[0],
+                  name2: names[1],
+                  matches: 0,
+                  wins: 0,
+                  ties: 0,
+                  losses: 0,
+                  totalDiff: 0,
+                  totalPoints: 0
+                };
+              }
+            };
+            ensure(key1, sorted1);
+            ensure(key2, sorted2);
+
+            // Équipe 1
+            pairs[key1].matches += 1;
+            pairs[key1].totalPoints += s1;
+            pairs[key1].totalDiff += (s1 - s2);
+            if (s1 > s2) pairs[key1].wins += 1;
+            else if (s1 < s2) pairs[key1].losses += 1;
+            else pairs[key1].ties += 1;
+
+            // Équipe 2
+            pairs[key2].matches += 1;
+            pairs[key2].totalPoints += s2;
+            pairs[key2].totalDiff += (s2 - s1);
+            if (s2 > s1) pairs[key2].wins += 1;
+            else if (s2 < s1) pairs[key2].losses += 1;
+            else pairs[key2].ties += 1;
+          });
+        });
+      });
+
+      const list = Object.keys(pairs).map(key => {
+        const p = pairs[key];
+        const winPct = p.matches > 0 ? (p.wins / p.matches) : 0;
+        const diffAvg = p.matches > 0 ? (p.totalDiff / p.matches) : 0;
+        const diffNorm = (diffAvg + 16) / 32; // -16..+16 → 0..1
+        const score = (winPct * 0.5) + (diffNorm * 0.5);
+        return {
+          key,
+          pairLabel: key,
+          matches: p.matches,
+          wins: p.wins,
+          ties: p.ties,
+          losses: p.losses,
+          winPct,
+          diffAvg,
+          score
+        };
+      });
+
+      list.sort((a, b) => {
+        if (b.score !== a.score) return b.score - a.score;
+        if (b.matches !== a.matches) return b.matches - a.matches;
+        return a.pairLabel.localeCompare(b.pairLabel, 'fr');
+      });
+
+      return list;
+    }
+
+    function renderPairsRanking(archiveList) {
+      const container = document.getElementById('fip-pairs-leaderboard');
+      if (!container) return;
+
+      if (!archiveList || archiveList.length === 0) {
+        container.innerHTML = '<p style="color: var(--text-muted); text-align: center;">Aucun match enregistré pour cette saison.</p>';
+        return;
+      }
+
+      const pairs = computePairsRanking(archiveList);
+
+      if (pairs.length === 0) {
+        container.innerHTML = '<p style="color: var(--text-muted); text-align: center;">Aucune paire trouvée.</p>';
+        return;
+      }
+
+      container.innerHTML = `
+        <table>
+          <thead>
+            <tr>
+              <th>Rang</th>
+              <th>Paires</th>
+              <th>Matchs</th>
+              <th>% Victoire</th>
+              <th>Diff moy.</th>
+              <th>Score Duo</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${pairs.map((p, i) => {
+              const rank = i + 1;
+              const rankClass = rank === 1 ? 'rank-1' : rank === 2 ? 'rank-2' : rank === 3 ? 'rank-3' : '';
+              const diffStr = p.diffAvg > 0 ? `+${p.diffAvg.toFixed(1)}` : p.diffAvg.toFixed(1);
+              const winPctStr = (p.winPct * 100).toFixed(0) + '%';
+              const scoreStr = p.score.toFixed(2);
+              return `
+                <tr class="${rankClass}">
+                  <td>#${rank}</td>
+                  <td>${escapeHtml(p.pairLabel)}</td>
+                  <td>${p.matches}</td>
+                  <td>${winPctStr}</td>
+                  <td>${diffStr}</td>
+                  <td>${scoreStr}</td>
+                </tr>`;
+            }).join('')}
+          </tbody>
+        </table>`;
+    }
+
+    /**
      * Agrège les stats FIP cumulées à partir d'une liste de tournois (archive)
      * et renvoie le classement trié (points → diff → wins), comme renderFIP().
      */
@@ -3043,26 +3240,60 @@
       let archive = loadArchive();
       const container = document.getElementById('fip-leaderboard');
       const seasonSelect = document.getElementById('fip-season-select');
-      const selectedSeason = seasonSelect ? seasonSelect.value : String(new Date().getFullYear());
+      // Garder la valeur demandée (y compris une année sans tournoi, ex. après reset)
+      const requestedSeason = seasonSelect ? seasonSelect.value : String(new Date().getFullYear());
 
       // Populate season options dynamically
       if (seasonSelect) {
-        const seasons = new Set(archive.map(t => t.season || (t.date && parseInt(String(t.date).slice(-2), 10) + 2000) || new Date().getFullYear()));
+        const seasons = new Set();
+        archive.forEach(t => {
+          if (t.season) {
+            seasons.add(Number(t.season) || t.season);
+          } else if (t.date) {
+            // Formats : "06/09/2026 09:19:31" ou "06/09/26 • 09:19"
+            const m = String(t.date).match(/(\d{2})\/(\d{2})\/(\d{2,4})/);
+            if (m) {
+              const y = m[3].length === 2 ? 2000 + parseInt(m[3], 10) : parseInt(m[3], 10);
+              seasons.add(y);
+            } else {
+              seasons.add(new Date().getFullYear());
+            }
+          } else {
+            seasons.add(new Date().getFullYear());
+          }
+        });
         seasons.add(new Date().getFullYear());
-        const currentVal = seasonSelect.value;
+        // Conserver l'année demandée même s'il n'y a pas encore de tournoi
+        if (requestedSeason && requestedSeason !== 'all') {
+          seasons.add(Number(requestedSeason) || requestedSeason);
+        }
         seasonSelect.innerHTML = [...seasons].sort((a,b) => b - a).map(s => 
           `<option value="${s}">${s}</option>`
         ).join('') + '<option value="all">Toutes saisons</option>';
-        if ([...seasons].map(String).includes(currentVal) || currentVal === 'all') {
-          seasonSelect.value = currentVal;
+        // Restaurer la valeur demandée
+        if (requestedSeason === 'all' || [...seasons].map(String).includes(String(requestedSeason))) {
+          seasonSelect.value = requestedSeason;
         } else {
           seasonSelect.value = String(new Date().getFullYear());
         }
       }
 
+      const selectedSeason = seasonSelect ? seasonSelect.value : requestedSeason;
+
       if (selectedSeason !== 'all') {
-        archive = archive.filter(t => String(t.season || new Date().getFullYear()) === String(selectedSeason));
+        archive = archive.filter(t => {
+          let y = t.season;
+          if (!y && t.date) {
+            const m = String(t.date).match(/(\d{2})\/(\d{2})\/(\d{2,4})/);
+            if (m) y = m[3].length === 2 ? 2000 + parseInt(m[3], 10) : parseInt(m[3], 10);
+          }
+          if (!y) y = new Date().getFullYear();
+          return String(y) === String(selectedSeason);
+        });
       }
+
+      // Classement des paires (même si archive vide)
+      renderPairsRanking(archive);
 
       if (archive.length === 0) {
         container.innerHTML = '<p style="color: var(--text-muted); text-align: center;">Aucun tournoi sauvegardé pour cette saison.</p>';
@@ -3337,7 +3568,56 @@
         </svg>`;
     }
 
-    function deleteTournament(id) {
+    const SETTINGS_PIN = '2110';
+
+    // Promise résolue quand le PIN admin est validé (ou false si annulé)
+    let _adminPinResolve = null;
+
+    function requestAdminPin(message) {
+      return new Promise((resolve) => {
+        _adminPinResolve = resolve;
+        const msg = document.getElementById('admin-pin-message');
+        if (msg) msg.textContent = message || 'Entrez le code PIN pour confirmer cette action.';
+        const input = document.getElementById('admin-pin-input');
+        const err = document.getElementById('admin-pin-error');
+        if (input) { input.value = ''; }
+        if (err) err.textContent = '';
+        document.getElementById('admin-pin-overlay').classList.remove('hidden');
+        setTimeout(() => { if (input) input.focus(); }, 50);
+      });
+    }
+
+    function closeAdminPinOverlay(success) {
+      document.getElementById('admin-pin-overlay').classList.add('hidden');
+      const input = document.getElementById('admin-pin-input');
+      if (input) input.value = '';
+      if (_adminPinResolve) {
+        _adminPinResolve(!!success);
+        _adminPinResolve = null;
+      }
+    }
+
+    function onAdminPinInput(el) {
+      el.value = el.value.replace(/\D/g, '').slice(0, 4);
+      if (el.value.length === 4) submitAdminPin();
+    }
+
+    function submitAdminPin() {
+      const input = document.getElementById('admin-pin-input');
+      const err = document.getElementById('admin-pin-error');
+      if (!input || input.value.length < 4) return;
+      if (input.value === SETTINGS_PIN) {
+        closeAdminPinOverlay(true);
+      } else {
+        if (err) err.textContent = 'Code incorrect';
+        input.value = '';
+        input.focus();
+      }
+    }
+
+    async function deleteTournament(id) {
+      const okPin = await requestAdminPin('Entrez le code PIN admin pour supprimer ce tournoi.');
+      if (!okPin) return;
       if (!confirm('Supprimer définitivement ce tournoi de Firebase ?\n\nCette action est irréversible et le tournoi disparaîtra pour tous les utilisateurs.')) return;
       let archive = loadArchive();
       archive = archive.filter(t => t.id !== id);
@@ -3349,12 +3629,170 @@
     }
 
     function openSettingsOverlay() {
+      // Toujours repartir de l'écran PIN
+      document.getElementById('settings-pin-screen').classList.remove('hidden');
+      document.getElementById('settings-content').classList.add('hidden');
+      const pinInput = document.getElementById('settings-pin-input');
+      if (pinInput) {
+        pinInput.value = '';
+        pinInput.focus();
+      }
+      const err = document.getElementById('settings-pin-error');
+      if (err) err.textContent = '';
       document.getElementById('settings-overlay').classList.remove('hidden');
-      updateTestModeUI();
     }
 
     function closeSettingsOverlay() {
       document.getElementById('settings-overlay').classList.add('hidden');
+      // Reset pour la prochaine ouverture
+      document.getElementById('settings-pin-screen').classList.remove('hidden');
+      document.getElementById('settings-content').classList.add('hidden');
+      const pinInput = document.getElementById('settings-pin-input');
+      if (pinInput) pinInput.value = '';
+    }
+
+    function onSettingsPinInput(el) {
+      // Ne garder que les chiffres
+      el.value = el.value.replace(/\D/g, '').slice(0, 4);
+      if (el.value.length === 4) {
+        checkSettingsPin();
+      }
+    }
+
+    function checkSettingsPin() {
+      const input = document.getElementById('settings-pin-input');
+      const err = document.getElementById('settings-pin-error');
+      if (!input) return;
+      if (input.value.length < 4) return;
+      if (input.value === SETTINGS_PIN) {
+        document.getElementById('settings-pin-screen').classList.add('hidden');
+        document.getElementById('settings-content').classList.remove('hidden');
+        updateTestModeUI();
+        updateCloseSeasonButton();
+        if (err) err.textContent = '';
+      } else {
+        if (err) err.textContent = 'Code incorrect';
+        input.value = '';
+        input.focus();
+      }
+    }
+
+    /**
+     * Règle d'accès au bouton « Clôturer & démarrer une nouvelle saison » :
+     * - Mode test → toujours autorisé
+     * - Mode réel → uniquement si la date du jour ≥ 1er janvier de (année max des tournois + 1)
+     *   ou ≥ 1er janvier de l'année civile suivante si aucun tournoi.
+     */
+    function canCloseSeason() {
+      if (isTestMode) return true;
+      const now = new Date();
+      const archive = loadArchive();
+      let maxSeason = now.getFullYear() - 1; // par défaut on peut clôturer l'année précédente
+      archive.forEach(t => {
+        const s = t.season || now.getFullYear();
+        if (s > maxSeason) maxSeason = s;
+      });
+      // Autorisé à partir du 1er janvier de l'année suivante
+      const unlockDate = new Date(maxSeason + 1, 0, 1); // 1er janvier
+      return now >= unlockDate;
+    }
+
+    function updateCloseSeasonButton() {
+      const btn = document.getElementById('btn-close-season');
+      const status = document.getElementById('close-season-status');
+      if (!btn) return;
+      if (canCloseSeason()) {
+        btn.disabled = false;
+        if (status) {
+          status.textContent = isTestMode
+            ? 'Mode test : reset disponible (aucune donnée réelle modifiée).'
+            : 'Vous pouvez clôturer la saison et démarrer la suivante.';
+          status.style.color = '#047857';
+        }
+      } else {
+        btn.disabled = true;
+        if (status) {
+          const archive = loadArchive();
+          let maxSeason = new Date().getFullYear();
+          archive.forEach(t => {
+            const s = t.season || maxSeason;
+            if (s > maxSeason) maxSeason = s;
+          });
+          status.textContent = `Disponible à partir du 1er janvier ${maxSeason + 1}.`;
+          status.style.color = 'var(--text-muted)';
+        }
+      }
+    }
+
+    function closeAndStartNewSeason() {
+      if (!canCloseSeason()) {
+        alert('Clôture non autorisée pour le moment.');
+        return;
+      }
+      const now = new Date();
+      // En mode test on bascule volontairement sur l'année suivante pour voir un classement vide
+      // (effet visible). En production on utilise l'année civile en cours.
+      let targetYear = now.getFullYear();
+      if (isTestMode) {
+        const archive = loadArchive();
+        let maxSeason = targetYear;
+        archive.forEach(t => {
+          const s = Number(t.season) || targetYear;
+          if (s > maxSeason) maxSeason = s;
+        });
+        targetYear = maxSeason + 1;
+      }
+
+      if (!confirm(
+        `Clôturer la saison et démarrer ${targetYear} ?\n\n` +
+        `• Aucune archive ne sera supprimée\n` +
+        `• L’ELO reste intact\n` +
+        `• Les classements se basent sur le filtre de saison\n` +
+        (isTestMode ? '\n(Mode test — bascule sur ' + targetYear + ' pour visualiser le reset)' : '')
+      )) return;
+
+      // Forcer le filtre de saison sur l'année cible AVANT le rendu
+      const seasonSelect = document.getElementById('fip-season-select');
+      if (seasonSelect) {
+        // Ajouter l'option si absente
+        let found = false;
+        for (let i = 0; i < seasonSelect.options.length; i++) {
+          if (seasonSelect.options[i].value === String(targetYear)) {
+            found = true;
+            break;
+          }
+        }
+        if (!found) {
+          const opt = document.createElement('option');
+          opt.value = String(targetYear);
+          opt.textContent = String(targetYear);
+          seasonSelect.insertBefore(opt, seasonSelect.firstChild);
+        }
+        seasonSelect.value = String(targetYear);
+      }
+
+      // Basculer sur l'onglet Ranking et rafraîchir
+      if (typeof switchTab === 'function') {
+        // switchTab appelle déjà renderFIP
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+        document.querySelector('.tab-btn[data-tab="fip"]')?.classList.add('active');
+        document.getElementById('panel-fip')?.classList.add('active');
+        document.getElementById('main-subtitle').textContent = 'Classement Joueurs & Paires • Saison en cours';
+      }
+      // S'assurer que la valeur est toujours  targetYear juste avant le rendu
+      if (seasonSelect) seasonSelect.value = String(targetYear);
+      if (typeof renderFIP === 'function') renderFIP();
+      // Re-forcer après render (au cas où)
+      if (seasonSelect) seasonSelect.value = String(targetYear);
+
+      const status = document.getElementById('close-season-status');
+      if (status) {
+        status.textContent = `✓ Saison clôturée. Classements basés sur ${targetYear}.`;
+        status.style.color = '#047857';
+      }
+      closeSettingsOverlay();
+      alert(`Nouvelle saison ${targetYear} démarrée.\nLes classements sont vides pour ${targetYear}.\nRevenez à 2026 via le filtre Saison pour revoir l'historique.`);
     }
 
     function clearArchive() {

@@ -485,6 +485,10 @@
       background: #2563eb; color: white;
     }
     .btn-live:hover { background: #1d4ed8; }
+    .btn-export {
+      background: #1e40af; color: white;
+    }
+    .btn-export:hover { background: #1e3a8a; }
     .spectator-banner {
       background: #eff6ff; border: 1px solid #bfdbfe; color: #1e40af;
       text-align: center; padding: 10px 14px; border-radius: 10px;
@@ -602,6 +606,9 @@
   <!-- Firebase SDK (compat) -->
   <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js"></script>
+  <!-- jsPDF + AutoTable (export PDF tournoi) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
 </head>
 <body>
 
@@ -2955,7 +2962,10 @@
               <span class="line1">Tournoi <span class="type-badge type-${t.type || '8'}">${t.type || '8'} joueurs</span></span>
               <span class="line2">${dateLabel}${t.season ? ' · Saison ' + t.season : ''}</span>
             </div>
-            <button class="btn-secondary" style="width:auto;padding:4px 10px;font-size:0.8rem; flex-shrink:0;" onclick="deleteTournament(${t.id})">Supprimer</button>
+            <span style="display:flex; gap:6px; flex-shrink:0;">
+              <button class="btn-export" style="width:auto;padding:4px 10px;font-size:0.8rem;" onclick="exportTournamentPDF(${t.id})">Export</button>
+              <button class="btn-secondary" style="width:auto;padding:4px 10px;font-size:0.8rem;" onclick="deleteTournament(${t.id})">Supprimer</button>
+            </span>
           </h3>
           ${(t.ranking || []).slice(0, mode === 8 ? 8 : (mode === 5 ? 5 : 4)).map((p) => {
             const r = p.rank || 0;
@@ -3626,6 +3636,465 @@
       renderArchiveForMode(5);
       renderArchiveForMode(4);
       if (document.getElementById('panel-fip').classList.contains('active')) renderFIP();
+    }
+
+    /**
+     * Export PDF d'un tournoi archivé (détail matchs + classement joueurs + top 10 paires cumulé saison).
+     */
+    function exportTournamentPDF(tournamentId) {
+      const fullArchive = loadArchive();
+      const idx = fullArchive.findIndex(t => t.id === tournamentId);
+      if (idx < 0) {
+        alert('Tournoi introuvable.');
+        return;
+      }
+      const t = fullArchive[idx];
+      if (typeof window.jspdf === 'undefined' && typeof window.jsPDF === 'undefined') {
+        alert('Bibliothèque PDF non chargée. Vérifiez votre connexion.');
+        return;
+      }
+      const { jsPDF } = window.jspdf || window;
+      const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+      const pageW = doc.internal.pageSize.getWidth();
+      const pageH = doc.internal.pageSize.getHeight();
+      const margin = 14;
+      // Palette app (1:1)
+      const blue = [30, 64, 175];
+      const orange = [249, 115, 22];
+      const accent = [5, 150, 105];
+      const muted = [100, 116, 139];
+      const dark = [15, 23, 42];
+      const border = [226, 232, 240];
+      const cardBg = [248, 250, 252];
+      const headBg = [239, 246, 255];
+      const gold = [202, 138, 4];
+      const silver = [100, 116, 139];
+      const bronze = [194, 65, 12];
+      const goldBg = [254, 249, 195];
+      const silverBg = [241, 245, 249];
+      const bronzeBg = [255, 237, 213];
+      const scoreBg = [236, 253, 245];
+      let y = margin;
+
+      const typeNum = String(t.type || '8');
+      const typeBadge = typeNum === '4'
+        ? { bg: [255, 237, 213], fg: [194, 65, 12], label: '4 joueurs' }
+        : typeNum === '5'
+          ? { bg: [254, 243, 199], fg: [146, 64, 14], label: '5 joueurs' }
+          : { bg: [219, 234, 254], fg: [30, 64, 175], label: '8 joueurs' };
+
+      const ensureSpace = (needed) => {
+        if (y + needed > pageH - 18) {
+          doc.addPage();
+          y = margin;
+          return true;
+        }
+        return false;
+      };
+
+      const drawSectionTitle = (title) => {
+        ensureSpace(14);
+        doc.setFillColor(...blue);
+        doc.roundedRect(margin, y - 3.2, 2.2, 6.5, 0.6, 0.6, 'F');
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(11);
+        doc.setTextColor(...blue);
+        doc.text(title, margin + 5, y + 1.5);
+        y += 7;
+      };
+
+      const drawSubtitle = (text) => {
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(7.5);
+        doc.setTextColor(...muted);
+        doc.text(text, margin, y);
+        y += 4;
+      };
+
+      const applyRankRowStyle = (data, rank) => {
+        if (data.section !== 'body') return;
+        if (rank === 1) {
+          data.cell.styles.fillColor = goldBg;
+          if (data.column.index === 0) {
+            data.cell.styles.textColor = gold;
+            data.cell.styles.fontStyle = 'bold';
+          }
+        } else if (rank === 2) {
+          data.cell.styles.fillColor = silverBg;
+          if (data.column.index === 0) {
+            data.cell.styles.textColor = silver;
+            data.cell.styles.fontStyle = 'bold';
+          }
+        } else if (rank === 3) {
+          data.cell.styles.fillColor = bronzeBg;
+          if (data.column.index === 0) {
+            data.cell.styles.textColor = bronze;
+            data.cell.styles.fontStyle = 'bold';
+          }
+        }
+      };
+
+      const tableBase = {
+        margin: { left: margin, right: margin },
+        styles: {
+          font: 'helvetica',
+          fontSize: 8,
+          cellPadding: 2.2,
+          textColor: dark,
+          lineColor: border,
+          lineWidth: 0.15
+        },
+        headStyles: {
+          fillColor: blue,
+          textColor: [255, 255, 255],
+          fontStyle: 'bold',
+          fontSize: 7.5,
+          cellPadding: 2.4
+        },
+        alternateRowStyles: { fillColor: cardBg },
+        theme: 'grid'
+      };
+
+      const drawFooter = () => {
+        const total = doc.internal.getNumberOfPages();
+        const now = new Date();
+        const dd = String(now.getDate()).padStart(2, '0');
+        const mo = String(now.getMonth() + 1).padStart(2, '0');
+        const yyyy = now.getFullYear();
+        const hh = String(now.getHours()).padStart(2, '0');
+        const mi = String(now.getMinutes()).padStart(2, '0');
+        const stamp = `${dd}/${mo}/${yyyy} ${hh}:${mi}`;
+        for (let i = 1; i <= total; i++) {
+          doc.setPage(i);
+          doc.setDrawColor(...border);
+          doc.setLineWidth(0.3);
+          doc.line(margin, pageH - 12, pageW - margin, pageH - 12);
+          doc.setFont('helvetica', 'bold');
+          doc.setFontSize(7.5);
+          doc.setTextColor(...blue);
+          const pw = doc.getTextWidth('Padel ');
+          doc.text('Padel ', margin, pageH - 7);
+          doc.setTextColor(...orange);
+          doc.text('Up', margin + pw, pageH - 7);
+          doc.setFont('helvetica', 'normal');
+          doc.setTextColor(...muted);
+          doc.text(`  ·  Généré le ${stamp}`, margin + pw + doc.getTextWidth('Up'), pageH - 7);
+          doc.text(`Page ${i} / ${total}`, pageW - margin, pageH - 7, { align: 'right' });
+        }
+      };
+
+      // En-tête bandeau
+      doc.setFillColor(...headBg);
+      doc.roundedRect(margin - 2, y - 2, pageW - 2 * margin + 4, 28, 2, 2, 'F');
+      doc.setDrawColor(...border);
+      doc.setLineWidth(0.3);
+      doc.roundedRect(margin - 2, y - 2, pageW - 2 * margin + 4, 28, 2, 2, 'S');
+
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(20);
+      doc.setTextColor(...blue);
+      const padelW = doc.getTextWidth('Padel ');
+      doc.text('Padel ', margin + 2, y + 7);
+      doc.setTextColor(...orange);
+      doc.text('Up', margin + 2 + padelW, y + 7);
+
+      const typeLabel = typeBadge.label;
+      const dateLabel = formatTournamentDate(t.date);
+      const seasonLabel = t.season ? `Saison ${t.season}` : '';
+
+      const badgeX = pageW - margin - 28;
+      doc.setFillColor(...typeBadge.bg);
+      doc.roundedRect(badgeX, y + 2, 26, 7, 3, 3, 'F');
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(7.5);
+      doc.setTextColor(...typeBadge.fg);
+      doc.text(typeBadge.label, badgeX + 13, y + 6.7, { align: 'center' });
+
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(9);
+      doc.setTextColor(...muted);
+      doc.text([dateLabel, seasonLabel].filter(Boolean).join('  ·  '), margin + 2, y + 16);
+      y += 32;
+
+      // Résumé
+      const history = t.matchHistory || [];
+      const nRounds = history.length;
+      const nMatches = history.reduce((acc, r) => acc + ((r.matches || []).length), 0);
+      const nPlayers = (t.ranking || []).length;
+      const resumeParts = [
+        `${nPlayers} joueur${nPlayers > 1 ? 's' : ''}`,
+        `${nRounds} ${Number(t.type) === 4 ? 'set' : 'tour'}${nRounds > 1 ? 's' : ''}`,
+        `${nMatches} match${nMatches > 1 ? 's' : ''}`
+      ];
+      doc.setFillColor(255, 255, 255);
+      doc.setDrawColor(...border);
+      doc.roundedRect(margin, y, pageW - 2 * margin, 12, 2, 2, 'FD');
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(8);
+      doc.setTextColor(...blue);
+      doc.text('Résumé', margin + 4, y + 5);
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(9);
+      doc.setTextColor(...dark);
+      doc.text(resumeParts.join('   ·   '), margin + 4, y + 9.5);
+      y += 18;
+
+      // Classement tournoi
+      const tourneySectionTitle = [
+        `Tournoi ${typeLabel}`,
+        dateLabel,
+        seasonLabel
+      ].filter(Boolean).join('  ·  ');
+      drawSectionTitle(tourneySectionTitle);
+
+      const ranking = [...(t.ranking || [])].sort((a, b) => {
+        if ((a.rank || 99) !== (b.rank || 99)) return (a.rank || 99) - (b.rank || 99);
+        if ((b.points || 0) !== (a.points || 0)) return (b.points || 0) - (a.points || 0);
+        return (b.diff || 0) - (a.diff || 0);
+      });
+
+      const playerHead = [['Rang', 'Joueur', 'Matchs', 'Points', 'Diff', 'W-T-L', '% Vic.', 'Pts/m', 'ELO']];
+      const playerBody = ranking.map(p => {
+        const played = (p.played != null) ? p.played : ((p.wins || 0) + (p.ties || 0) + (p.losses || 0));
+        const wins = p.wins || 0;
+        const winPct = played > 0 ? ((wins / played) * 100).toFixed(1) + '%' : '—';
+        const ppm = played > 0 ? ((p.points || 0) / played).toFixed(1) : '—';
+        const diffStr = (p.diff > 0 ? '+' : '') + (p.diff ?? 0);
+        const eloStr = (typeof p.elo === 'number')
+          ? formatElo(p.elo)
+          : formatElo(getStoredElo(p.name));
+        return [
+          '#' + (p.rank || '—'),
+          p.name || '—',
+          String(played),
+          String(p.points ?? 0),
+          diffStr,
+          `${p.wins || 0}-${p.ties || 0}-${p.losses || 0}`,
+          winPct,
+          ppm,
+          eloStr
+        ];
+      });
+
+      doc.autoTable({
+        ...tableBase,
+        startY: y,
+        head: playerHead,
+        body: playerBody,
+        columnStyles: {
+          0: { cellWidth: 12,halign: 'center' },
+          1: { cellWidth: 'auto' },
+          2: { cellWidth: 14,halign: 'center' },
+          3: { cellWidth: 14,halign: 'center' },
+          4: { cellWidth: 12,halign: 'center' },
+          5: { cellWidth: 18,halign: 'center' },
+          6: { cellWidth: 14,halign: 'center' },
+          7: { cellWidth: 14,halign: 'center' },
+          8: { cellWidth: 12,halign: 'center' }
+        },
+        didParseCell: (data) => {
+          applyRankRowStyle(data, ranking[data.row.index]?.rank);
+        }
+      });
+      y = doc.lastAutoTable.finalY + 3;
+      drawSubtitle('W = Victoire  ·  T = Nul  ·  L = Défaite  ·  Diff = Points marqués − Points encaissés');
+      y += 4;
+
+      // Détail des matchs
+      drawSectionTitle('Détail des matchs');
+
+      if (!history.length) {
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(9);
+        doc.setTextColor(...muted);
+        doc.text('Détail des matchs non disponible pour ce tournoi.', margin, y);
+        y += 8;
+      } else {
+        history.forEach((round) => {
+          ensureSpace(18);
+          const isSet = !!round.isSet || Number(t.type) === 4;
+          const title = round.isPetitesFinales
+            ? 'Petites Finales'
+            : (isSet ? `Set ${round.round}` : `Tour ${round.round}${round.sit ? `  ·  attente : ${round.sit}` : ''}`);
+          doc.setFont('helvetica', 'bold');
+          doc.setFontSize(7.5);
+          const tw = doc.getTextWidth(title) + 6;
+          doc.setFillColor(...blue);
+          doc.roundedRect(margin, y - 2.5, tw, 6, 2, 2, 'F');
+          doc.setTextColor(255, 255, 255);
+          doc.text(title, margin + 3, y + 1.5);
+          y += 6;
+
+          const matchRows = (round.matches || []).map(m => [
+            m.team1 || '—',
+            `${m.score1 ?? '—'} – ${m.score2 ?? '—'}`,
+            m.team2 || '—'
+          ]);
+          doc.autoTable({
+            startY: y,
+            head: [['Équipe A', 'Score', 'Équipe B']],
+            body: matchRows,
+            margin: { left: margin, right: margin },
+            styles: {
+              font: 'helvetica',
+              fontSize: 8,
+              cellPadding: 2.2,
+              textColor: dark,
+              lineColor: border,
+              lineWidth: 0.12
+            },
+            headStyles: {
+              fillColor: cardBg,
+              textColor: muted,
+              fontStyle: 'bold',
+              fontSize: 7,
+              lineColor: border,
+              lineWidth: 0.12
+            },
+            columnStyles: {
+              0: { cellWidth: 'auto',halign: 'right' },
+              1: {
+                cellWidth: 28,
+               halign: 'center',
+                fontStyle: 'bold',
+                textColor: accent,
+                fillColor: scoreBg
+              },
+              2: { cellWidth: 'auto',halign: 'left' }
+            },
+            theme: 'grid'
+          });
+          y = doc.lastAutoTable.finalY + 5;
+        });
+      }
+
+      // Archive cumulée filtrée saison
+      let cumulArchive = fullArchive.slice(idx);
+      const seasonOfT = (() => {
+        if (t.season) return String(t.season);
+        if (t.date) {
+          const m = String(t.date).match(/(\d{2})\/(\d{2})\/(\d{2,4})/);
+          if (m) return String(m[3].length === 2 ? 2000 + parseInt(m[3], 10) : parseInt(m[3], 10));
+        }
+        return String(new Date().getFullYear());
+      })();
+      cumulArchive = cumulArchive.filter(tt => {
+        let yS = tt.season;
+        if (!yS && tt.date) {
+          const m = String(tt.date).match(/(\d{2})\/(\d{2})\/(\d{2,4})/);
+          if (m) yS = m[3].length === 2 ? 2000 + parseInt(m[3], 10) : parseInt(m[3], 10);
+        }
+        if (!yS) yS = new Date().getFullYear();
+        return String(yS) === seasonOfT;
+      });
+
+      // Classement joueurs cumulé
+      drawSectionTitle('Classement joueurs (cumulé saison)');
+      drawSubtitle('Jusqu’à ce tournoi inclus  ·  filtre saison ' + seasonOfT);
+
+      const cumulPlayers = computeFipRanking(cumulArchive);
+      if (cumulPlayers.length === 0) {
+        doc.setFontSize(9);
+        doc.setTextColor(...muted);
+        doc.text('Aucun joueur classé pour cette période.', margin, y + 2);
+        y += 10;
+      } else {
+        const cumulHead = [['Rang', 'Joueur', 'Tournois', 'Matchs', 'Points', 'Diff', 'W-T-L', '% Vic.', 'Pts/m', 'ELO']];
+        const cumulBody = cumulPlayers.map(p => {
+          const diffStr = (p.diff > 0 ? '+' : '') + (p.diff ?? 0);
+          const winPct = p.matches > 0 ? p.winPct.toFixed(1) + '%' : '—';
+          const ppm = p.matches > 0 ? p.ppm.toFixed(1) : '—';
+          return [
+            '#' + (p.officialRank || '—'),
+            p.name || '—',
+            String(p.tournaments ?? 0),
+            String(p.matches ?? 0),
+            String(p.points ?? 0),
+            diffStr,
+            `${p.wins || 0}-${p.ties || 0}-${p.losses || 0}`,
+            winPct,
+            ppm,
+            formatElo(p.elo)
+          ];
+        });
+        doc.autoTable({
+          ...tableBase,
+          startY: y,
+          head: cumulHead,
+          body: cumulBody,
+          styles: { ...tableBase.styles, fontSize: 7.5, cellPadding: 1.9 },
+          headStyles: { ...tableBase.headStyles, fontSize: 7 },
+          columnStyles: {
+            0: { cellWidth: 11,halign: 'center' },
+            1: { cellWidth: 'auto' },
+            2: { cellWidth: 14,halign: 'center' },
+            3: { cellWidth: 13,halign: 'center' },
+            4: { cellWidth: 13,halign: 'center' },
+            5: { cellWidth: 12,halign: 'center' },
+            6: { cellWidth: 16,halign: 'center' },
+            7: { cellWidth: 13,halign: 'center' },
+            8: { cellWidth: 13,halign: 'center' },
+            9: { cellWidth: 11,halign: 'center' }
+          },
+          didParseCell: (data) => {
+            applyRankRowStyle(data, cumulPlayers[data.row.index]?.officialRank);
+          }
+        });
+        y = doc.lastAutoTable.finalY + 3;
+        drawSubtitle('% Victoire = Victoires ÷ Matchs  ·  Pts/m = Points totaux ÷ Matchs');
+        y += 4;
+      }
+
+      // Top 10 paires
+      drawSectionTitle('Top 10 paires (cumulé saison)');
+      drawSubtitle('Score Duo = (% Victoire × 0,5) + (Diff normalisé × 0,5)  ·  saison ' + seasonOfT);
+
+      const pairsList = computePairsRanking(cumulArchive).slice(0, 10);
+      if (pairsList.length === 0) {
+        doc.setFontSize(9);
+        doc.setTextColor(...muted);
+        doc.text('Aucune paire trouvée pour cette période.', margin, y + 2);
+        y += 10;
+      } else {
+        const pairHead = [['Rang', 'Paire', 'Matchs', '% Victoire', 'Diff moy.', 'Score Duo']];
+        const pairBody = pairsList.map((p, i) => {
+          const diffStr = p.diffAvg > 0 ? `+${p.diffAvg.toFixed(1)}` : p.diffAvg.toFixed(1);
+          return [
+            '#' + (i + 1),
+            p.pairLabel,
+            String(p.matches),
+            (p.winPct * 100).toFixed(0) + '%',
+            diffStr,
+            p.score.toFixed(2)
+          ];
+        });
+        doc.autoTable({
+          ...tableBase,
+          startY: y,
+          head: pairHead,
+          body: pairBody,
+          columnStyles: {
+            0: { cellWidth: 14,halign: 'center' },
+            1: { cellWidth: 'auto' },
+            2: { cellWidth: 18,halign: 'center' },
+            3: { cellWidth: 22,halign: 'center' },
+            4: { cellWidth: 20,halign: 'center' },
+            5: { cellWidth: 22,halign: 'center' }
+          },
+          didParseCell: (data) => {
+            applyRankRowStyle(data, data.row.index + 1);
+          }
+        });
+      }
+
+      drawFooter();
+
+      const now = new Date();
+      const fdd = String(now.getDate()).padStart(2, '0');
+      const fmo = String(now.getMonth() + 1).padStart(2, '0');
+      const fyyyy = now.getFullYear();
+      const filename = `PadelUp_Export_${fdd}-${fmo}-${fyyyy}.pdf`;
+      doc.save(filename);
     }
 
     function openSettingsOverlay() {

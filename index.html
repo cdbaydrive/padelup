@@ -568,6 +568,17 @@
       font-weight: 400;
       color: var(--text-muted);
     }
+    /* Boutons Export / Supprimer empilés (Export au-dessus) — évite de couper le badge type sur mobile */
+    .archive-actions {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      flex-shrink: 0;
+      align-items: stretch;
+    }
+    .archive-actions button {
+      white-space: nowrap;
+    }
 
     /* FIP : échelle ELO + légende tableau — empilés sur mobile, ligne sur desktop */
     .elo-scale-levels {
@@ -2962,7 +2973,7 @@
               <span class="line1">Tournoi <span class="type-badge type-${t.type || '8'}">${t.type || '8'} joueurs</span></span>
               <span class="line2">${dateLabel}${t.season ? ' · Saison ' + t.season : ''}</span>
             </div>
-            <span style="display:flex; gap:6px; flex-shrink:0;">
+            <span class="archive-actions">
               <button class="btn-export" style="width:auto;padding:4px 10px;font-size:0.8rem;" onclick="exportTournamentPDF(${t.id})">Export</button>
               <button class="btn-secondary" style="width:auto;padding:4px 10px;font-size:0.8rem;" onclick="deleteTournament(${t.id})">Supprimer</button>
             </span>

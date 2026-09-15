@@ -709,7 +709,8 @@
       margin-bottom: 3px;
     }
     .racket-form select,
-    .racket-form input[type="text"] {
+    .racket-form input[type="text"],
+    .racket-form input[type="number"] {
       width: 100%;
       padding: 8px 10px;
       border: 1px solid var(--border);
@@ -717,6 +718,40 @@
       font-size: 0.9rem;
       background: #fff;
       color: var(--text);
+    }
+    .racket-scores-title {
+      grid-column: 1 / -1;
+      font-size: 0.8rem;
+      font-weight: 700;
+      color: var(--court-bg);
+      margin-top: 4px;
+      padding-top: 8px;
+      border-top: 1px solid var(--border);
+    }
+    .racket-score-cell {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      min-width: 72px;
+    }
+    .racket-score-label {
+      font-size: 0.78rem;
+      font-weight: 600;
+      color: var(--text);
+      white-space: nowrap;
+    }
+    .racket-score-bar-wrap {
+      width: 56px;
+      height: 6px;
+      background: #e2e8f0;
+      border-radius: 3px;
+      overflow: hidden;
+    }
+    .racket-score-bar {
+      height: 100%;
+      border-radius: 3px;
+      min-width: 0;
     }
     .racket-form .racket-actions {
       margin-top: 12px;
@@ -824,11 +859,166 @@
       color: #cbd5e1;
       line-height: 1;
     }
+    .rackets-th-global {
+      margin-top: 2px;
+      padding: 3px 6px;
+      border-radius: 6px;
+      font-size: 0.68rem;
+      font-weight: 700;
+      line-height: 1.25;
+      text-align: center;
+      max-width: 100px;
+      border: 1px solid transparent;
+    }
+    .rackets-th-global.lvl-exceptionnel {
+      color: #166534;
+      background: #dcfce7;
+      border-color: #86efac;
+    }
+    .rackets-th-global.lvl-tresbon {
+      color: #15803d;
+      background: #f0fdf4;
+      border-color: #86efac;
+    }
+    .rackets-th-global.lvl-correct {
+      color: #a16207;
+      background: #fefce8;
+      border-color: #fde047;
+    }
+    .rackets-th-global.lvl-faible {
+      color: #b91c1c;
+      background: #fef2f2;
+      border-color: #fca5a5;
+    }
+    .rackets-th-global.lvl-empty {
+      color: #94a3b8;
+      background: #f8fafc;
+      border-color: #e2e8f0;
+      font-weight: 600;
+    }
+    .racket-global-summary {
+      grid-column: 1 / -1;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 10px 12px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      background: #fff;
+      margin-bottom: 4px;
+    }
+    .racket-global-summary .rg-label {
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--text-muted);
+    }
+    .racket-global-summary .rg-badge {
+      padding: 5px 12px;
+      border-radius: 8px;
+      font-size: 0.9rem;
+      font-weight: 700;
+      border: 1px solid transparent;
+    }
+    .racket-global-summary .rg-badge.lvl-exceptionnel {
+      color: #166534; background: #dcfce7; border-color: #86efac;
+    }
+    .racket-global-summary .rg-badge.lvl-tresbon {
+      color: #15803d; background: #f0fdf4; border-color: #86efac;
+    }
+    .racket-global-summary .rg-badge.lvl-correct {
+      color: #a16207; background: #fefce8; border-color: #fde047;
+    }
+    .racket-global-summary .rg-badge.lvl-faible {
+      color: #b91c1c; background: #fef2f2; border-color: #fca5a5;
+    }
+    .racket-global-summary .rg-badge.lvl-empty {
+      color: #94a3b8; background: #f8fafc; border-color: #e2e8f0;
+    }
     .rackets-compare-table thead th.player-col {
       cursor: pointer;
     }
     .rackets-compare-table thead th.player-col:hover {
       background: #dbeafe;
+    }
+    .crit-label-with-info {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      flex-wrap: nowrap;
+    }
+    .info-i-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      border: 1.5px solid #94a3b8;
+      background: #fff;
+      color: #64748b;
+      font-size: 0.65rem;
+      font-weight: 700;
+      font-style: italic;
+      font-family: Georgia, "Times New Roman", serif;
+      cursor: pointer;
+      padding: 0;
+      line-height: 1;
+      flex-shrink: 0;
+      width: 16px;
+      min-width: 16px;
+    }
+    .info-i-btn:hover {
+      border-color: var(--court-bg);
+      color: var(--court-bg);
+      background: #eff6ff;
+    }
+    .racket-form .info-i-btn {
+      width: 15px;
+      height: 15px;
+      min-width: 15px;
+      font-size: 0.6rem;
+    }
+    .racket-form label .crit-label-with-info {
+      gap: 5px;
+    }
+    .rackets-source-foot {
+      margin-top: 12px;
+      text-align: center;
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      line-height: 1.4;
+    }
+    .rackets-source-foot a {
+      color: var(--court-bg);
+      font-weight: 600;
+      text-decoration: underline;
+      text-underline-offset: 2px;
+    }
+    .rackets-source-foot a:hover {
+      color: #1d4ed8;
+    }
+    #criterion-info-overlay {
+      z-index: 1100;
+    }
+    .criterion-info-modal {
+      max-width: 420px;
+    }
+    .criterion-info-modal h3 {
+      padding-right: 28px;
+      margin-bottom: 12px;
+    }
+    .criterion-info-body {
+      color: var(--text);
+      font-size: 0.9rem;
+      line-height: 1.5;
+    }
+    .criterion-info-body p {
+      margin-bottom: 10px;
+      color: var(--text);
+    }
+    .criterion-info-body p:last-child {
+      margin-bottom: 0;
     }
     @media (max-width: 640px) {
       .racket-grid { grid-template-columns: 1fr; }
@@ -1216,6 +1406,19 @@
       <div class="rackets-compare-wrap">
         <div id="fip-rackets-compare"></div>
       </div>
+      <p class="rackets-source-foot">
+        Source du classement raquette :
+        <a href="https://www.extreme-padel.fr/x-compare" target="_blank" rel="noopener noreferrer">https://www.extreme-padel.fr</a>
+      </p>
+    </div>
+  </div>
+
+  <!-- Overlay info critère raquette -->
+  <div id="criterion-info-overlay" class="live-overlay hidden" onclick="if(event.target===this)closeCriterionInfoOverlay()">
+    <div class="live-modal criterion-info-modal">
+      <button class="live-close" onclick="closeCriterionInfoOverlay()" aria-label="Fermer">×</button>
+      <h3 id="criterion-info-title">Critère</h3>
+      <div class="criterion-info-body" id="criterion-info-body"></div>
     </div>
   </div>
 
@@ -1766,8 +1969,184 @@
         materialCore: '',
         materialFace: '',
         type: '',
-        photo: ''
+        photo: '',
+        scorePower: '',
+        scoreControl: '',
+        scoreComfort: '',
+        scoreSpin: '',
+        scoreTolerance: '',
+        scoreManeuver: '',
+        scoreBallExit: ''
       };
+    }
+
+    const RACKET_SCORE_KEYS = [
+      {
+        key: 'scorePower', label: 'Puissance', id: 'racket-score-power',
+        info: [
+          "La puissance mesure la capacité de la raquette à générer de la vitesse de balle et de l'impact sur vos frappes appuyées.",
+          "La note affichée reflète l'explosivité à la frappe et la facilité avec laquelle la raquette booste vos coups de finition : smash à plat, par 3, volée claquée..."
+        ]
+      },
+      {
+        key: 'scoreControl', label: 'Contrôle', id: 'racket-score-control',
+        info: [
+          "Le contrôle correspond à la capacité de la raquette à maintenir la trajectoire de la balle lors de la frappe, en limitant au maximum les déviations.",
+          "Plus une raquette offre de contrôle, plus vous pouvez placer la balle avec précision, même sur des coups rapides ou puissants."
+        ]
+      },
+      {
+        key: 'scoreComfort', label: 'Confort', id: 'racket-score-comfort',
+        info: [
+          "Le confort traduit la capacité de la raquette à absorber les vibrations et réduire les chocs au moment de l'impact avec la balle.",
+          "Une raquette confortable protège davantage le bras et procure une sensation de frappe plus douce, ce qui limite la fatigue et les risques de blessure."
+        ]
+      },
+      {
+        key: 'scoreSpin', label: "Prise d'effet", id: 'racket-score-spin',
+        info: [
+          "La prise d'effet correspond à la capacité de la raquette à imprimer de la rotation à la balle, grâce à la texture de la surface et à la conception du cadre.",
+          "Plus une raquette favorise la prise d'effet, plus il est facile de générer des balles liftées, slicées ou avec effet sortant, idéales pour déstabiliser l'adversaire, écraser vos bandejas ou faire sortir vos par 3."
+        ]
+      },
+      {
+        key: 'scoreTolerance', label: 'Tolérance', id: 'racket-score-tolerance',
+        info: [
+          "La tolérance correspond à la capacité de la raquette à réduire les erreurs sur les frappes décentrées.",
+          "Une raquette tolérante offre un sweet spot plus large, permettant de garder du contrôle et de la puissance même lorsque la balle n'est pas frappée parfaitement au centre."
+        ]
+      },
+      {
+        key: 'scoreManeuver', label: 'Maniabilité', id: 'racket-score-maneuver',
+        info: [
+          "La maniabilité reflète la facilité avec laquelle vous pouvez déplacer la raquette dans l'espace, que ce soit pour réagir rapidement au filet ou pour ajuster vos coups en défense.",
+          "Une raquette maniable offre plus de vitesse d'exécution et de réactivité, ce qui est idéal pour les coups en défense ou en réactivité au filet."
+        ]
+      },
+      {
+        key: 'scoreBallExit', label: 'Sortie de balle', id: 'racket-score-ballexit',
+        info: [
+          "La sortie de balle correspond à la facilité avec laquelle la balle quitte la raquette après l'impact sur les frappes lentes (volée non appuyée, coups défensifs).",
+          "Une raquette offrant une bonne sortie de balle demande moins d'effort pour renvoyer la balle, ce qui est idéal en phase défensive ou pour les joueurs recherchant plus de facilité de jeu."
+        ]
+      }
+    ];
+
+    function openCriterionInfoOverlay(key) {
+      const item = RACKET_SCORE_KEYS.find(s => s.key === key);
+      if (!item) return;
+      const titleEl = document.getElementById('criterion-info-title');
+      const bodyEl = document.getElementById('criterion-info-body');
+      if (titleEl) titleEl.textContent = item.label;
+      if (bodyEl) {
+        bodyEl.innerHTML = (item.info || []).map(p => `<p>${escapeHtml(p)}</p>`).join('');
+      }
+      const ov = document.getElementById('criterion-info-overlay');
+      if (ov) ov.classList.remove('hidden');
+    }
+
+    function closeCriterionInfoOverlay() {
+      const ov = document.getElementById('criterion-info-overlay');
+      if (ov) ov.classList.add('hidden');
+    }
+
+    function criterionInfoBtn(key) {
+      return `<button type="button" class="info-i-btn" title="En savoir plus" aria-label="Information"
+        onclick="event.stopPropagation(); openCriterionInfoOverlay('${key}')">i</button>`;
+    }
+
+
+    /** Parse score 0–10, max 1 décimale. Retourne '' si vide/invalide. */
+    function parseRacketScore(raw) {
+      if (raw == null || String(raw).trim() === '') return '';
+      let n = parseFloat(String(raw).replace(',', '.'));
+      if (isNaN(n)) return '';
+      n = Math.max(0, Math.min(10, n));
+      n = Math.round(n * 10) / 10;
+      return n;
+    }
+
+    function formatRacketScore(v) {
+      if (v === '' || v == null) return '';
+      const n = typeof v === 'number' ? v : parseRacketScore(v);
+      if (n === '') return '';
+      return (Math.round(n * 10) / 10).toFixed(1).replace(/\.0$/, '.0');
+    }
+
+    /** Couleur mini-barre selon score 0–10 (rouge → orange → vert). */
+    function racketScoreBarColor(n) {
+      const t = Math.max(0, Math.min(1, n / 10));
+      // 0 → rouge, 0.5 → ambre, 1 → vert
+      let r, g, b;
+      if (t < 0.5) {
+        const u = t / 0.5;
+        r = 239; g = Math.round(68 + u * (180 - 68)); b = 68;
+      } else {
+        const u = (t - 0.5) / 0.5;
+        r = Math.round(234 - u * (234 - 34)); g = Math.round(179 + u * (197 - 179)); b = Math.round(8 + u * (94 - 8));
+      }
+      return `rgb(${r},${g},${b})`;
+    }
+
+    function renderRacketScoreCell(val) {
+      const n = parseRacketScore(val);
+      if (n === '') return `<td class="rackets-compare-empty">—</td>`;
+      const pct = (n / 10) * 100;
+      const color = racketScoreBarColor(n);
+      const label = formatRacketScore(n) + ' / 10';
+      return `<td>
+        <div class="racket-score-cell">
+          <span class="racket-score-label">${label}</span>
+          <div class="racket-score-bar-wrap">
+            <div class="racket-score-bar" style="width:${pct}%;background:${color};"></div>
+          </div>
+        </div>
+      </td>`;
+    }
+
+    /**
+     * Score global : moyenne des 7 critères uniquement si tous sont renseignés.
+     * Retourne { value, level, levelClass, label } ou null si incomplet.
+     */
+    function computeRacketGlobalScore(racket) {
+      if (!racket) return null;
+      const values = RACKET_SCORE_KEYS.map(s => parseRacketScore(racket[s.key]));
+      if (values.some(v => v === '')) return null;
+      const avg = values.reduce((a, b) => a + b, 0) / values.length;
+      const value = Math.round(avg * 10) / 10;
+      let level, levelClass;
+      if (value >= 8.5) { level = 'Exceptionnel'; levelClass = 'lvl-exceptionnel'; }
+      else if (value >= 7.0) { level = 'Très bon'; levelClass = 'lvl-tresbon'; }
+      else if (value >= 5.5) { level = 'Correct'; levelClass = 'lvl-correct'; }
+      else { level = 'Faible'; levelClass = 'lvl-faible'; }
+      const numStr = formatRacketScore(value);
+      return {
+        value,
+        level,
+        levelClass,
+        label: numStr + ' · ' + level
+      };
+    }
+
+    function renderRacketGlobalBadgeHtml(racket, opts) {
+      opts = opts || {};
+      const g = computeRacketGlobalScore(racket);
+      if (!g) {
+        const emptyClass = opts.summary ? 'rg-badge lvl-empty' : 'rackets-th-global lvl-empty';
+        return `<span class="${emptyClass}">—</span>`;
+      }
+      if (opts.summary) {
+        return `<span class="rg-badge ${g.levelClass}">${escapeHtml(g.label)}</span>`;
+      }
+      return `<div class="rackets-th-global ${g.levelClass}">${escapeHtml(g.label)}</div>`;
+    }
+
+    function renderRacketGlobalSummaryHtml(racket) {
+      const badge = renderRacketGlobalBadgeHtml(racket, { summary: true });
+      return `<div class="racket-global-summary">
+        <span class="rg-label">Score global</span>
+        ${badge}
+      </div>`;
     }
 
     // Photo en cours d'édition dans l'overlay (data URL JPEG compressée)
@@ -1791,7 +2170,14 @@
         materialCore: r.materialCore || '',
         materialFace: r.materialFace || legacy || '',
         type: r.type || '',
-        photo: (typeof r.photo === 'string' && r.photo.indexOf('data:image') === 0) ? r.photo : ''
+        photo: (typeof r.photo === 'string' && r.photo.indexOf('data:image') === 0) ? r.photo : '',
+        scorePower: parseRacketScore(r.scorePower),
+        scoreControl: parseRacketScore(r.scoreControl),
+        scoreComfort: parseRacketScore(r.scoreComfort),
+        scoreSpin: parseRacketScore(r.scoreSpin),
+        scoreTolerance: parseRacketScore(r.scoreTolerance),
+        scoreManeuver: parseRacketScore(r.scoreManeuver),
+        scoreBallExit: parseRacketScore(r.scoreBallExit)
       };
     }
 
@@ -1812,8 +2198,12 @@
         materialFace: (racket.materialFace || '').trim(),
         type: (racket.type || '').trim()
       };
+      RACKET_SCORE_KEYS.forEach(({ key }) => {
+        const v = parseRacketScore(racket[key]);
+        if (v !== '') clean[key] = v;
+      });
       if (photo) clean.photo = photo;
-      const hasAny = Object.values(clean).some(v => v);
+      const hasAny = Object.values(clean).some(v => v !== '' && v != null);
       if (hasAny) {
         cloudData.rackets[name] = clean;
       } else {
@@ -2024,6 +2414,18 @@
             <label>Type</label>
             <select id="racket-type">${typeOpts}</select>
           </div>
+          <div class="racket-scores-title">Scores ressentis (0 – 10)</div>
+          ${renderRacketGlobalSummaryHtml(r)}
+          ${RACKET_SCORE_KEYS.map(s => {
+            const v = r[s.key];
+            const disp = (v === '' || v == null) ? '' : formatRacketScore(v);
+            return `<div>
+              <label><span class="crit-label-with-info">${s.label}${criterionInfoBtn(s.key)}</span></label>
+              <input type="number" id="${s.id}" min="0" max="10" step="0.1" inputmode="decimal"
+                value="${disp}" placeholder="Ex. 5.7"
+                oninput="onRacketScoreInput(this)">
+            </div>`;
+          }).join('')}
         </div>
         <div class="racket-actions">
           <button type="button" onclick="saveRacketFromOverlay()">Enregistrer</button>
@@ -2040,6 +2442,19 @@
       else wrap.classList.add('hidden');
     }
 
+    function onRacketScoreInput(el) {
+      if (!el || el.value === '') return;
+      let n = parseFloat(String(el.value).replace(',', '.'));
+      if (isNaN(n)) { el.value = ''; return; }
+      if (n < 0) n = 0;
+      if (n > 10) n = 10;
+      // Limiter à 1 décimale à la saisie (sans forcer le format pendant la frappe)
+      const parts = String(el.value).replace(',', '.').split('.');
+      if (parts[1] && parts[1].length > 1) {
+        el.value = (Math.round(n * 10) / 10).toString();
+      }
+    }
+
     function saveRacketFromOverlay(name) {
       name = name || currentStatsPlayerName;
       if (!name) return;
@@ -2053,16 +2468,27 @@
       const materialCore = document.getElementById('racket-material-core')?.value || '';
       const materialFace = document.getElementById('racket-material-face')?.value || '';
       const type = document.getElementById('racket-type')?.value || '';
+      const scores = {};
+      RACKET_SCORE_KEYS.forEach(({ key, id }) => {
+        scores[key] = parseRacketScore(document.getElementById(id)?.value);
+      });
       setRacket(name, {
         brand, brandCustom, model, shape, balance, weight,
         materialFrame, materialCore, materialFace, type,
-        photo: _pendingRacketPhoto || ''
+        photo: _pendingRacketPhoto || '',
+        ...scores
       });
       const st = document.getElementById('racket-save-status');
       if (st) {
         st.textContent = '✓ Raquette enregistrée';
         st.style.color = 'var(--accent)';
         setTimeout(() => { if (st) st.textContent = ''; }, 2000);
+      }
+      // Mettre à jour le badge score global dans l'overlay
+      const summary = document.querySelector('#stats-racket-block .racket-global-summary');
+      if (summary) {
+        const tmp = { ...scores };
+        summary.outerHTML = renderRacketGlobalSummaryHtml(tmp);
       }
       // Rafraîchir le comparatif si l'onglet FIP est visible
       if (document.getElementById('panel-fip')?.classList.contains('active')) {
@@ -2091,7 +2517,8 @@
         { key: 'materialFrame', label: 'Mat. Frame' },
         { key: 'materialCore', label: 'Mat. Core' },
         { key: 'materialFace', label: 'Mat. Face' },
-        { key: 'type', label: 'Type' }
+        { key: 'type', label: 'Type' },
+        ...RACKET_SCORE_KEYS.map(s => ({ key: s.key, label: s.label, isScore: true }))
       ];
 
       const headCells = playerRanking.map((p, i) => {
@@ -2100,10 +2527,12 @@
         const photo = r.photo
           ? `<div class="rackets-th-photo"><img src="${r.photo}" alt=""></div>`
           : `<div class="rackets-th-photo"><span class="rackets-th-photo-empty">—</span></div>`;
+        const globalBadge = renderRacketGlobalBadgeHtml(r);
         return `<th class="player-col" data-name="${escapeHtml(p.name)}" title="#${rank} ${escapeHtml(p.name)}">
           <div class="rackets-th-inner">
             <span class="rackets-th-name">#${rank} ${escapeHtml(p.name)}</span>
             ${photo}
+            ${globalBadge}
           </div>
         </th>`;
       }).join('');
@@ -2111,11 +2540,15 @@
       const bodyRows = criteria.map(c => {
         const cells = playerRanking.map(p => {
           const r = getRacket(p.name);
+          if (c.isScore) return renderRacketScoreCell(r[c.key]);
           const val = racketFieldValue(r, c.key);
           if (!val) return `<td class="rackets-compare-empty">—</td>`;
           return `<td>${escapeHtml(val)}</td>`;
         }).join('');
-        return `<tr><td class="crit-col">${c.label}</td>${cells}</tr>`;
+        const labelHtml = c.isScore
+          ? `<span class="crit-label-with-info">${c.label}${criterionInfoBtn(c.key)}</span>`
+          : c.label;
+        return `<tr><td class="crit-col">${labelHtml}</td>${cells}</tr>`;
       }).join('');
 
       container.innerHTML = `

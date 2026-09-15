@@ -440,8 +440,10 @@
       border-radius: 8px; font-size: 0.85rem; background: #f8fafc;
     }
 
-    /* Player stats overlay — scroll de tout l'overlay, haut visible si trop grand, centré sinon */
-    #player-stats-overlay {
+    /* Overlays longs (stats joueur, réglages, journal) — scroll du fond, haut visible si trop grand, centré sinon */
+    #player-stats-overlay,
+    #settings-overlay,
+    #access-logs-overlay {
       align-items: flex-start;
       overflow-y: auto;
       -webkit-overflow-scrolling: touch;
@@ -449,9 +451,12 @@
       padding-top: max(16px, env(safe-area-inset-top));
       padding-bottom: max(16px, env(safe-area-inset-bottom));
     }
-    #player-stats-overlay .live-modal {
+    #player-stats-overlay .live-modal,
+    #settings-overlay .live-modal,
+    #access-logs-overlay .live-modal {
       margin-top: auto;
       margin-bottom: auto;
+      overflow: visible; /* laisse le contenu s’étendre ; le scroll est sur l’overlay */
     }
 
     /* Player stats overlay */
@@ -1734,7 +1739,11 @@
     function openAccessLogsOverlay() {
       cleanupOldAccessLogs();
       const ov = document.getElementById('access-logs-overlay');
-      if (ov) ov.classList.remove('hidden');
+      if (ov) {
+        ov.classList.remove('hidden');
+        ov.scrollTop = 0;
+      }
+      document.body.style.overflow = 'hidden';
       const monthKey = getCurrentMonthKey();
       const label = document.getElementById('access-logs-month-label');
       if (label) {
@@ -1751,6 +1760,10 @@
     function closeAccessLogsOverlay() {
       const ov = document.getElementById('access-logs-overlay');
       if (ov) ov.classList.add('hidden');
+      // Si Réglages est encore ouvert, garder le body bloqué
+      const settingsOpen = document.getElementById('settings-overlay') &&
+        !document.getElementById('settings-overlay').classList.contains('hidden');
+      if (!settingsOpen) document.body.style.overflow = '';
     }
 
     function loadAndRenderAccessLogs() {
@@ -1808,9 +1821,14 @@
             </div>`;
         }).join('');
       }).catch(err => {
-        console.warn(err);
+        console.warn('Access logs read error', err);
+        const msg = (err && (err.message || err.code)) ? String(err.message || err.code) : 'Erreur inconnue';
+        const isPerm = /permission|PERMISSION_DENIED/i.test(msg);
         document.getElementById('access-logs-list').innerHTML =
-          '<p style="color:#dc2626; text-align:center; padding:16px;">Erreur de lecture</p>';
+          `<p style="color:#dc2626; text-align:center; padding:12px 16px; font-size:0.85rem; line-height:1.4;">
+            Erreur de lecture${isPerm ? ' (règles Firebase)' : ''}<br>
+            <span style="font-size:0.75rem; color:var(--text-muted); word-break:break-word;">${escapeHtml(msg)}</span>
+          </p>`;
         document.getElementById('access-logs-count').textContent = '—';
       });
     }
@@ -5611,11 +5629,15 @@
       }
       const err = document.getElementById('settings-pin-error');
       if (err) err.textContent = '';
-      document.getElementById('settings-overlay').classList.remove('hidden');
+      const overlay = document.getElementById('settings-overlay');
+      overlay.classList.remove('hidden');
+      overlay.scrollTop = 0;
+      document.body.style.overflow = 'hidden';
     }
 
     function closeSettingsOverlay() {
       document.getElementById('settings-overlay').classList.add('hidden');
+      document.body.style.overflow = '';
       // Reset pour la prochaine ouverture
       document.getElementById('settings-pin-screen').classList.remove('hidden');
       document.getElementById('settings-content').classList.add('hidden');

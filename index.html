@@ -1524,9 +1524,39 @@
           <p id="close-season-status" style="font-size:0.8rem; margin-top:10px; color:var(--text-muted);"></p>
         </div>
 
+        <div style="margin-top:20px; padding:14px; background:#eff6ff; border:1px solid #bfdbfe; border-radius:10px;">
+          <p style="font-size:0.9rem; font-weight:600; color:#1e40af; margin-bottom:8px;">Journal d’accès</p>
+          <p style="font-size:0.82rem; color:var(--text-muted); line-height:1.35; margin-bottom:12px;">
+            Visites du mois en cours (timestamp, visitorId, platform).
+            Purge auto des mois précédents à l’ouverture de Réglages.
+          </p>
+          <button type="button" class="btn-secondary" onclick="openAccessLogsOverlay()" style="width:100%;">
+            Voir le journal d’accès
+          </button>
+        </div>
+
         <p style="font-size:0.75rem; color:var(--text-muted); margin-top:14px; text-align:center;">
           L’import fusionne les tournois absents (pas d’écrasement total).
         </p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Overlay Journal d'accès -->
+  <div id="access-logs-overlay" class="live-overlay hidden" onclick="if(event.target===this)closeAccessLogsOverlay()">
+    <div class="live-modal" style="max-width:480px; max-height:85vh; display:flex; flex-direction:column;">
+      <button class="live-close" onclick="closeAccessLogsOverlay()" aria-label="Fermer">×</button>
+      <h3 style="margin-bottom:4px;">📋 Journal d’accès</h3>
+      <p id="access-logs-month-label" style="color:var(--text-muted); font-size:0.85rem; margin-bottom:12px;"></p>
+      <div id="access-logs-count" style="text-align:center; font-size:1.5rem; font-weight:700; color:var(--court-bg); margin-bottom:12px;">
+        —
+      </div>
+      <div id="access-logs-list" style="flex:1; overflow-y:auto; max-height:45vh; border:1px solid var(--border); border-radius:8px; background:#f8fafc; padding:8px;">
+        <p style="color:var(--text-muted); text-align:center; font-size:0.9rem; padding:16px;">Chargement…</p>
+      </div>
+      <div style="margin-top:14px; display:flex; gap:8px;">
+        <button type="button" class="btn-danger" onclick="clearCurrentMonthAccessLogs()" style="flex:1;">Effacer</button>
+        <button type="button" class="btn-secondary" onclick="closeAccessLogsOverlay()" style="flex:1;">Fermer</button>
       </div>
     </div>
   </div>
@@ -1621,6 +1651,182 @@
     function getArchiveRef() {
       if (!firebaseDb) return null;
       return firebaseDb.ref(getArchivePath());
+    }
+
+    // ========== JOURNAL D'ACCÈS (Réglages) ==========
+    function getAccessLogsRootPath() {
+      return isTestMode ? 'access_logs_test' : 'access_logs';
+    }
+
+    function getCurrentMonthKey() {
+      const d = new Date();
+      const y = d.getFullYear();
+      const m = String(d.getMonth() + 1).padStart(2, '0');
+      return `${y}-${m}`;
+    }
+
+    function getOrCreateVisitorId() {
+      const KEY = 'padelup_visitor_id';
+      let id = localStorage.getItem(KEY);
+      if (!id || id.length < 8) {
+        id = 'v-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 10);
+        try { localStorage.setItem(KEY, id); } catch (e) { /* private mode */ }
+      }
+      return id;
+    }
+
+    function detectPlatform() {
+      const ua = (navigator.userAgent || '').toLowerCase();
+      if (/android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini|mobile/i.test(ua)) {
+        return 'mobile';
+      }
+      if (typeof window.matchMedia === 'function' && window.matchMedia('(max-width: 768px)').matches) {
+        return 'mobile';
+      }
+      return 'desktop';
+    }
+
+    /**
+     * Enregistre une visite (appelé une fois au chargement).
+     * Structure : /access_logs/{YYYY-MM}/{pushId} → { timestamp, visitorId, platform }
+     */
+    function logAccess() {
+      if (!initFirebase() || !firebaseDb) return;
+      // Ne pas logger en mode spectateur pour éviter de polluer avec les lives
+      if (typeof isSpectator !== 'undefined' && isSpectator) return;
+
+      const monthKey = getCurrentMonthKey();
+      const payload = {
+        timestamp: Date.now(),
+        visitorId: getOrCreateVisitorId(),
+        platform: detectPlatform()
+      };
+      try {
+        firebaseDb.ref(getAccessLogsRootPath() + '/' + monthKey).push(payload)
+          .catch(err => console.warn('Access log push error', err));
+      } catch (e) {
+        console.warn('Access log error', e);
+      }
+    }
+
+    /**
+     * À l’ouverture de Réglages : supprime les nœuds des mois précédents.
+     */
+    function cleanupOldAccessLogs() {
+      if (!firebaseDb) return;
+      const root = getAccessLogsRootPath();
+      const current = getCurrentMonthKey();
+      firebaseDb.ref(root).once('value').then(snap => {
+        const val = snap.val();
+        if (!val || typeof val !== 'object') return;
+        const updates = {};
+        Object.keys(val).forEach(monthKey => {
+          if (monthKey !== current) {
+            updates[monthKey] = null; // suppression
+          }
+        });
+        if (Object.keys(updates).length > 0) {
+          firebaseDb.ref(root).update(updates).catch(err => console.warn('Access logs cleanup error', err));
+        }
+      }).catch(err => console.warn('Access logs cleanup read error', err));
+    }
+
+    function openAccessLogsOverlay() {
+      cleanupOldAccessLogs();
+      const ov = document.getElementById('access-logs-overlay');
+      if (ov) ov.classList.remove('hidden');
+      const monthKey = getCurrentMonthKey();
+      const label = document.getElementById('access-logs-month-label');
+      if (label) {
+        const [y, m] = monthKey.split('-');
+        const monthNames = ['janvier','février','mars','avril','mai','juin','juillet','août','septembre','octobre','novembre','décembre'];
+        label.textContent = `Mois en cours : ${monthNames[parseInt(m, 10) - 1]} ${y}`;
+      }
+      document.getElementById('access-logs-count').textContent = '…';
+      document.getElementById('access-logs-list').innerHTML =
+        '<p style="color:var(--text-muted); text-align:center; font-size:0.9rem; padding:16px;">Chargement…</p>';
+      loadAndRenderAccessLogs();
+    }
+
+    function closeAccessLogsOverlay() {
+      const ov = document.getElementById('access-logs-overlay');
+      if (ov) ov.classList.add('hidden');
+    }
+
+    function loadAndRenderAccessLogs() {
+      if (!initFirebase() || !firebaseDb) {
+        document.getElementById('access-logs-list').innerHTML =
+          '<p style="color:#dc2626; text-align:center; padding:16px;">Firebase indisponible</p>';
+        document.getElementById('access-logs-count').textContent = '0';
+        return;
+      }
+      const monthKey = getCurrentMonthKey();
+      firebaseDb.ref(getAccessLogsRootPath() + '/' + monthKey).once('value').then(snap => {
+        const val = snap.val();
+        const entries = [];
+        if (val && typeof val === 'object') {
+          Object.keys(val).forEach(id => {
+            const e = val[id];
+            if (e && typeof e.timestamp === 'number') {
+              entries.push({ id, timestamp: e.timestamp, visitorId: e.visitorId || '—', platform: e.platform || '—' });
+            }
+          });
+        }
+        // Plus récent en haut
+        entries.sort((a, b) => b.timestamp - a.timestamp);
+
+        const countEl = document.getElementById('access-logs-count');
+        if (countEl) {
+          countEl.textContent = entries.length === 0
+            ? '0 accès'
+            : (entries.length === 1 ? '1 accès' : `${entries.length} accès`);
+        }
+
+        const listEl = document.getElementById('access-logs-list');
+        if (!listEl) return;
+        if (entries.length === 0) {
+          listEl.innerHTML = '<p style="color:var(--text-muted); text-align:center; font-size:0.9rem; padding:16px;">Aucun accès enregistré ce mois.</p>';
+          return;
+        }
+        listEl.innerHTML = entries.map(e => {
+          const d = new Date(e.timestamp);
+          const dd = String(d.getDate()).padStart(2, '0');
+          const mo = String(d.getMonth() + 1).padStart(2, '0');
+          const yyyy = d.getFullYear();
+          const hh = String(d.getHours()).padStart(2, '0');
+          const mi = String(d.getMinutes()).padStart(2, '0');
+          const ss = String(d.getSeconds()).padStart(2, '0');
+          const dateStr = `${dd}/${mo}/${yyyy} ${hh}:${mi}:${ss}`;
+          const platformLabel = e.platform === 'mobile' ? '📱 mobile' : '💻 desktop';
+          const shortId = e.visitorId.length > 18 ? e.visitorId.slice(0, 16) + '…' : e.visitorId;
+          return `
+            <div style="padding:10px 12px; border-bottom:1px solid var(--border); font-size:0.85rem;">
+              <div style="font-weight:600; color:var(--text);">${dateStr}</div>
+              <div style="color:var(--text-muted); margin-top:2px; word-break:break-all;">
+                ${platformLabel} · <span title="${escapeHtml(e.visitorId)}">${escapeHtml(shortId)}</span>
+              </div>
+            </div>`;
+        }).join('');
+      }).catch(err => {
+        console.warn(err);
+        document.getElementById('access-logs-list').innerHTML =
+          '<p style="color:#dc2626; text-align:center; padding:16px;">Erreur de lecture</p>';
+        document.getElementById('access-logs-count').textContent = '—';
+      });
+    }
+
+    function clearCurrentMonthAccessLogs() {
+      if (!confirm('Effacer tous les logs d’accès du mois en cours ?\n\nCette action est irréversible.')) return;
+      if (!firebaseDb) return;
+      const monthKey = getCurrentMonthKey();
+      firebaseDb.ref(getAccessLogsRootPath() + '/' + monthKey).remove()
+        .then(() => {
+          loadAndRenderAccessLogs();
+        })
+        .catch(err => {
+          console.warn(err);
+          alert('Erreur lors de la suppression.');
+        });
     }
 
     function toggleTestMode(enabled) {
@@ -5435,6 +5641,7 @@
         document.getElementById('settings-content').classList.remove('hidden');
         updateTestModeUI();
         updateCloseSeasonButton();
+        cleanupOldAccessLogs(); // purge des mois précédents à l’ouverture de Réglages
         if (err) err.textContent = '';
       } else {
         if (err) err.textContent = 'Code incorrect';
@@ -6381,6 +6588,9 @@
     renderArchiveForMode(8);
     renderArchiveForMode(5);
     renderArchiveForMode(4);
+
+    // Journal d’accès : une entrée par visite (hors mode spectateur)
+    setTimeout(logAccess, 600);
 
     // Détection mode spectateur / migration
     (function checkUrlParams() {

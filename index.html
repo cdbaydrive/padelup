@@ -1049,13 +1049,13 @@
 <body>
 
   <h1><span style="color:#1e40af;">Padel</span> <span style="color:#f97316;">Up</span></h1>
-  <p class="subtitle" id="main-subtitle">Match à 4 • Sets (1 jeu = 4 pts)</p>
+  <p class="subtitle" id="main-subtitle">Matchs à 4 • Sets (1 jeu = 4 pts)</p>
 
   <div class="tabs">
-    <button class="tab-btn active" data-tab="4" onclick="switchTab('4')">Match<br>à 4</button>
-    <button class="tab-btn" data-tab="5" onclick="switchTab('5')">Match<br>à 5</button>
-    <button class="tab-btn" data-tab="6" onclick="switchTab('6')">Match<br>à 6</button>
-    <button class="tab-btn" data-tab="8" onclick="switchTab('8')">Match<br>à 8</button>
+    <button class="tab-btn active" data-tab="4" onclick="switchTab('4')">Matchs<br>à 4</button>
+    <button class="tab-btn" data-tab="5" onclick="switchTab('5')">Matchs<br>à 5</button>
+    <button class="tab-btn" data-tab="6" onclick="switchTab('6')">Matchs<br>à 6</button>
+    <button class="tab-btn" data-tab="8" onclick="switchTab('8')">Matchs<br>à 8</button>
     <button class="tab-btn" data-tab="fip" onclick="switchTab('fip')">Padel <span style="color:#f97316;">Up</span><br>Ranking</button>
   </div>
 
@@ -1199,9 +1199,9 @@
         <label style="display: flex; align-items: flex-start; gap: 10px; cursor: pointer; font-size: 0.95rem; color: var(--text);">
           <input type="checkbox" id="balanced-fip-8" checked style="margin-top: 3px; width: 18px; height: 18px; accent-color: var(--accent);">
           <span>
-            <strong>Rotation Balanced (FIP)</strong><br>
+            <strong>Niveau Équilibré Padel Up</strong><br>
             <span style="font-size: 0.82rem; color: var(--text-muted); line-height: 1.35;">
-              Utilise le classement FIP (pts/match) pour minimiser les écarts de force entre les équipes.
+              Utilise le classement Padel Up (pts/match) pour minimiser les écarts de force entre les équipes.
               Les joueurs sans historique sont placés aléatoirement. Les partenaires restent uniques.
             </span>
           </span>
@@ -1378,9 +1378,9 @@
         <label style="display: flex; align-items: flex-start; gap: 10px; cursor: pointer; font-size: 0.95rem; color: var(--text);">
           <input type="checkbox" id="balanced-fip-6" checked style="margin-top: 3px; width: 18px; height: 18px; accent-color: var(--accent);">
           <span>
-            <strong>Rotation Balanced (FIP)</strong><br>
+            <strong>Niveau Équilibré Padel Up</strong><br>
             <span style="font-size: 0.82rem; color: var(--text-muted); line-height: 1.35;">
-              Utilise le classement FIP (pts/match) pour minimiser les écarts de force entre les équipes.
+              Utilise le classement Padel Up (pts/match) pour minimiser les écarts de force entre les équipes.
               Les joueurs sans historique sont placés aléatoirement. Les partenaires restent uniques.
             </span>
           </span>
@@ -2958,7 +2958,7 @@
       } else {
         currentMode = parseInt(tab, 10);
         const subtitles = {
-          4: 'Match à 4 • Sets (1 jeu = 4 pts)',
+          4: 'Matchs à 4 • Sets (1 jeu = 4 pts)',
           5: '5 Joueurs • 1 Terrain • 16 Points par Match',
           6: '6 Joueurs • 1 Terrain • 16 Points par Match',
           8: '8 Joueurs • 2 Terrains • 16 Points par Match'
@@ -3385,7 +3385,7 @@
       if (mode === 8) {
         const balancedBanner = usedBalanced
           ? `<p style="text-align:center; font-size:0.85rem; color:#047857; background:#ecfdf5; border:1px solid #a7f3d0; border-radius:8px; padding:8px 12px; margin-bottom:14px;">
-               ✓ Rotation Balanced activée — équipes équilibrées selon le FIP (pts/match)
+               ✓ Niveau Équilibré Padel Up activé — équipes équilibrées selon pts/match
              </p>`
           : '';
         document.getElementById('round-card-8').innerHTML = `
@@ -3449,7 +3449,7 @@
       } else if (mode === 6) {
         const balancedBanner = usedBalanced
           ? `<p style="text-align:center; font-size:0.85rem; color:#047857; background:#ecfdf5; border:1px solid #a7f3d0; border-radius:8px; padding:8px 12px; margin-bottom:14px;">
-               ✓ Rotation Balanced activée — équipes équilibrées selon le FIP (pts/match)
+               ✓ Niveau Équilibré Padel Up activé — équipes équilibrées selon pts/match
              </p>`
           : '';
         document.getElementById('round-card-6').innerHTML = `

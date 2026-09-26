@@ -363,6 +363,7 @@
       font-weight: 600;
     }
     .type-badge.type-8 { background: #dbeafe; color: #1e40af; }
+    .type-badge.type-6 { background: #ede9fe; color: #6d28d9; }
     .type-badge.type-5 { background: #fef3c7; color: #92400e; }
     .type-badge.type-4 { background: #ffedd5; color: #c2410c; }
     .mini-rank { font-size: 0.85rem; display: flex; justify-content: space-between; padding: 3px 0; color: var(--text); }
@@ -502,8 +503,10 @@
     .spectator-mode .nav-buttons,
     .spectator-mode .actions-row,
     .spectator-mode #setup-card-8,
+    .spectator-mode #setup-card-6,
     .spectator-mode #setup-card-5,
     .spectator-mode #archive-card-8,
+    .spectator-mode #archive-card-6,
     .spectator-mode #archive-card-5,
     .spectator-mode .tabs,
     .spectator-mode input.score-input,
@@ -1050,8 +1053,9 @@
 
   <div class="tabs">
     <button class="tab-btn active" data-tab="4" onclick="switchTab('4')">Match<br>à 4</button>
-    <button class="tab-btn" data-tab="5" onclick="switchTab('5')">Americano<br>à 5</button>
-    <button class="tab-btn" data-tab="8" onclick="switchTab('8')">Americano<br>à 8</button>
+    <button class="tab-btn" data-tab="5" onclick="switchTab('5')">Match<br>à 5</button>
+    <button class="tab-btn" data-tab="6" onclick="switchTab('6')">Match<br>à 6</button>
+    <button class="tab-btn" data-tab="8" onclick="switchTab('8')">Match<br>à 8</button>
     <button class="tab-btn" data-tab="fip" onclick="switchTab('fip')">Padel <span style="color:#f97316;">Up</span><br>Ranking</button>
   </div>
 
@@ -1365,6 +1369,90 @@
     </div>
   </div>
 
+  <!-- PANEL 6 -->
+  <div id="panel-6" class="tab-panel">
+    <div id="setup-card-6" class="card">
+      <h2>Entrer les noms des 6 joueurs</h2>
+      <div class="grid-setup" id="player-inputs-6"></div>
+      <div class="balanced-option" style="margin: 14px 0 18px; padding: 12px 14px; background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px;">
+        <label style="display: flex; align-items: flex-start; gap: 10px; cursor: pointer; font-size: 0.95rem; color: var(--text);">
+          <input type="checkbox" id="balanced-fip-6" checked style="margin-top: 3px; width: 18px; height: 18px; accent-color: var(--accent);">
+          <span>
+            <strong>Rotation Balanced (FIP)</strong><br>
+            <span style="font-size: 0.82rem; color: var(--text-muted); line-height: 1.35;">
+              Utilise le classement FIP (pts/match) pour minimiser les écarts de force entre les équipes.
+              Les joueurs sans historique sont placés aléatoirement. Les partenaires restent uniques.
+            </span>
+          </span>
+        </label>
+      </div>
+      <button onclick="startTournament(6)">Démarrer le tournoi (6 joueurs)</button>
+    </div>
+
+    <div id="round-card-6" class="card hidden">
+      <h2 id="round-title-6">Tour 1 sur 6</h2>
+      <div id="waiting-box-6" class="waiting-box">Joueurs en attente : <span id="waiting-player-6">—</span></div>
+      <div class="court-grid" id="courts-6">
+        <div class="court">
+          <div class="court-header">
+            <span class="court-title">Terrain unique</span>
+            <div class="scores-prog-row">
+              <span class="prognostic-value" id="c1-prog-left-6">–</span>
+              <div class="scores-row-inner">
+                <input type="number" id="c1-t1-score-6" class="score-input" min="0" max="16" oninput="handleScoreInput(this, 'c1-t2-score-6')">
+                <input type="number" id="c1-t2-score-6" class="score-input" min="0" max="16" oninput="handleScoreInput(this, 'c1-t1-score-6')">
+              </div>
+              <span class="prognostic-value" id="c1-prog-right-6">–</span>
+            </div>
+          </div>
+          <div class="match-body">
+            <div class="team-side left">
+              <span class="player-name" id="c1-t1-p1-6"></span>
+              <span class="player-name" id="c1-t1-p2-6"></span>
+            </div>
+            <div class="vs-badge">VS</div>
+            <div class="team-side right">
+              <span class="player-name" id="c1-t2-p1-6"></span>
+              <span class="player-name" id="c1-t2-p2-6"></span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div id="error-message-6" class="error-msg"></div>
+      <div class="nav-buttons">
+        <button onclick="submitRound(6)">Enregistrer les scores & Tour suivant</button>
+        <button class="btn-orange" id="btn-back-6" onclick="goBackOneRound(6)" disabled>↩ Tour précédent</button>
+      </div>
+    </div>
+
+    <div id="leaderboard-card-6" class="card hidden">
+      <h2>Classement en direct (6 joueurs)</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Rang</th><th>Joueur</th><th>Joué</th><th>W-T-L</th><th>Diff</th><th>Points</th>
+          </tr>
+        </thead>
+        <tbody id="leaderboard-body-6"></tbody>
+      </table>
+      <p class="legend">W = Victoire • T = Match nul (8-8) • L = Défaite • Diff = Points marqués − Points encaissés</p>
+      <div class="actions-row" id="end-actions-6" style="display:none;">
+        <button onclick="saveCurrentTournament(6)">💾 Sauvegarder ce tournoi</button>
+        <button class="btn-secondary" onclick="startNewTournament(6)">Nouveau tournoi</button>
+      </div>
+    </div>
+
+    <div id="history-card-6" class="card hidden">
+      <h2>Historique des matchs (tournoi en cours)</h2>
+      <div id="history-list-6" class="history-list"></div>
+    </div>
+
+    <div id="archive-card-6" class="card">
+      <h2>Historique des tournois à 6 joueurs</h2>
+      <div id="archive-list-6"></div>
+    </div>
+  </div>
+
   <!-- PANEL FIP -->
   <div id="panel-fip" class="tab-panel">
     <div class="card">
@@ -1622,13 +1710,33 @@
       { teams: [[1, 2], [3, 4]], sit: 0 }
     ];
 
+    // Mode 6: 6 rounds, 1 court, 2 sit each round — unique partners, each sits twice
+    const ROTATION_MATRIX_6 = [
+      { teams: [[0, 1], [2, 3]], sit: [4, 5] },
+      { teams: [[0, 4], [1, 5]], sit: [2, 3] },
+      { teams: [[2, 4], [3, 5]], sit: [0, 1] },
+      { teams: [[0, 2], [1, 4]], sit: [3, 5] },
+      { teams: [[0, 3], [2, 5]], sit: [1, 4] },
+      { teams: [[1, 3], [4, 5]], sit: [0, 2] }
+    ];
+
+    // Petites Finales mode 6 (classement figé fin des 6 tours) — indices de rang 0=1er … 5=6e
+    const PF_SEQUENCE_6 = [
+      { teams: [[0, 3], [1, 2]], label: '1er+4e vs 2e+3e' },
+      { teams: [[2, 5], [3, 4]], label: '3e+6e vs 4e+5e' },
+      { teams: [[0, 5], [1, 4]], label: '1er+6e vs 2e+5e' },
+      { teams: [[0, 4], [1, 5]], label: '1er+5e vs 2e+6e' },
+      { teams: [[0, 2], [1, 3]], label: '1er+3e vs 2e+4e' }
+    ];
+
     let currentMode = 4;
     let players = [];
     let currentRound = 0;
     let matchHistory = [];
     let tournamentFinished = false;
     let petitesFinalesDone = false;
-    let petitesFinalesPairings = null; // { c1: [[pIdx, pIdx], [pIdx, pIdx]], c2: [[...], [...]] }
+    let petitesFinalesPairings = null; // mode 8: { c1, c2 } ; mode 6: { teams, step, rankedIds }
+    let petitesFinalesStep = 0; // index dans PF_SEQUENCE_6 (mode 6)
     let allowGoBack = true; // false après un retour, jusqu'à la prochaine validation
     let tournamentSaved = false; // true dès que "Sauvegarder ce tournoi" a été validé pour la session en cours
 
@@ -1867,6 +1975,7 @@
       // Rafraîchir les vues
       renderArchiveForMode(4);
       renderArchiveForMode(5);
+      renderArchiveForMode(6);
       renderArchiveForMode(8);
       if (document.getElementById('panel-fip')?.classList.contains('active')) renderFIP();
     }
@@ -1966,6 +2075,7 @@
       // Rafraîchir les vues qui dépendent de l'archive
       try {
         renderArchiveForMode(8);
+        renderArchiveForMode(6);
         renderArchiveForMode(5);
         renderArchiveForMode(4);
         if (document.getElementById('panel-fip') && document.getElementById('panel-fip').classList.contains('active')) {
@@ -2822,6 +2932,20 @@
       saveData(data);
     }
 
+    function playerCountForMode(mode) {
+      if (mode === 8) return 8;
+      if (mode === 6) return 6;
+      if (mode === 5) return 5;
+      return 4;
+    }
+
+    function totalRegularRounds(mode) {
+      if (mode === 8) return 7;
+      if (mode === 6) return 6;
+      if (mode === 5) return 5;
+      return 0;
+    }
+
     function switchTab(tab) {
       document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
       document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
@@ -2836,6 +2960,7 @@
         const subtitles = {
           4: 'Match à 4 • Sets (1 jeu = 4 pts)',
           5: '5 Joueurs • 1 Terrain • 16 Points par Match',
+          6: '6 Joueurs • 1 Terrain • 16 Points par Match',
           8: '8 Joueurs • 2 Terrains • 16 Points par Match'
         };
         document.getElementById('main-subtitle').textContent = subtitles[currentMode] || '';
@@ -2849,7 +2974,7 @@
     let activeSuggestionIndex = -1;
 
     function buildPlayerInputs(mode) {
-      const count = mode === 8 ? 8 : (mode === 5 ? 5 : 4);
+      const count = playerCountForMode(mode);
       const setupInputs = document.getElementById(`player-inputs-${mode}`);
       if (!setupInputs) return;
       setupInputs.innerHTML = '';
@@ -2870,7 +2995,7 @@
     }
 
     function getUsedNamesExcept(mode, exceptIdx) {
-      const count = mode === 8 ? 8 : 5;
+      const count = playerCountForMode(mode);
       const used = new Set();
       for (let i = 0; i < count; i++) {
         if (i === exceptIdx) continue;
@@ -2883,7 +3008,7 @@
     }
 
     function validatePlayerNames(mode) {
-      const count = mode === 8 ? 8 : 5;
+      const count = playerCountForMode(mode);
       const nameToIndices = {};
       for (let i = 0; i < count; i++) {
         const el = document.getElementById(`p${mode}-${i}`);
@@ -3022,33 +3147,28 @@
     }
 
     /** Score de déséquilibre d'une ordonance (indices = positions 0..7 dans la matrice) */
-    function computeImbalanceScore(orderedPlayers, strengthMap) {
+    function computeImbalanceScore(orderedPlayers, strengthMap, mode) {
       let total = 0;
-      for (let r = 0; r < ROTATION_MATRIX_8.length; r++) {
-        const rot = ROTATION_MATRIX_8[r];
-        // Court 1
-        const t1a = strengthMap[orderedPlayers[rot.c1[0][0]].name];
-        const t1b = strengthMap[orderedPlayers[rot.c1[0][1]].name];
-        const t2a = strengthMap[orderedPlayers[rot.c1[1][0]].name];
-        const t2b = strengthMap[orderedPlayers[rot.c1[1][1]].name];
-        // Court 2
-        const u1a = strengthMap[orderedPlayers[rot.c2[0][0]].name];
-        const u1b = strengthMap[orderedPlayers[rot.c2[0][1]].name];
-        const u2a = strengthMap[orderedPlayers[rot.c2[1][0]].name];
-        const u2b = strengthMap[orderedPlayers[rot.c2[1][1]].name];
-
-        // On ignore les matchs où un joueur n'a pas de force connue (null)
-        const avg = (a, b) => {
-          if (a == null || b == null) return null;
-          return (a + b) / 2;
-        };
-        const e1 = avg(t1a, t1b);
-        const e2 = avg(t2a, t2b);
+      const avg = (a, b) => {
+        if (a == null || b == null) return null;
+        return (a + b) / 2;
+      };
+      const addMatch = (i1, i2, j1, j2) => {
+        const e1 = avg(strengthMap[orderedPlayers[i1].name], strengthMap[orderedPlayers[i2].name]);
+        const e2 = avg(strengthMap[orderedPlayers[j1].name], strengthMap[orderedPlayers[j2].name]);
         if (e1 != null && e2 != null) total += Math.abs(e1 - e2);
-
-        const f1 = avg(u1a, u1b);
-        const f2 = avg(u2a, u2b);
-        if (f1 != null && f2 != null) total += Math.abs(f1 - f2);
+      };
+      if (mode === 6) {
+        for (let r = 0; r < ROTATION_MATRIX_6.length; r++) {
+          const rot = ROTATION_MATRIX_6[r];
+          addMatch(rot.teams[0][0], rot.teams[0][1], rot.teams[1][0], rot.teams[1][1]);
+        }
+      } else {
+        for (let r = 0; r < ROTATION_MATRIX_8.length; r++) {
+          const rot = ROTATION_MATRIX_8[r];
+          addMatch(rot.c1[0][0], rot.c1[0][1], rot.c1[1][0], rot.c1[1][1]);
+          addMatch(rot.c2[0][0], rot.c2[0][1], rot.c2[1][0], rot.c2[1][1]);
+        }
       }
       return total;
     }
@@ -3067,7 +3187,8 @@
      * en conservant la matrice de rotation fixe.
      * Joueurs sans historique FIP → positions aléatoires.
      */
-    function reorderPlayersBalancedFIP(playerList) {
+    function reorderPlayersBalancedFIP(playerList, mode) {
+      const n = playerList.length;
       const strengthMap = getFipPtsPerMatchMap();
       const withStrength = [];
       const withoutStrength = [];
@@ -3081,30 +3202,26 @@
         }
       });
 
-      // Tri du plus fort au plus faible
       withStrength.sort((a, b) => b.ppm - a.ppm);
 
-      // Si moins de 2 joueurs avec historique → pas d'intérêt à optimiser
       if (withStrength.length < 2) {
-        return shuffleArray(playerList);
+        return shuffleArray(playerList).map((p, idx) => ({
+          id: idx, name: p.name, points: 0, played: 0,
+          wins: 0, ties: 0, losses: 0, diff: 0
+        }));
       }
 
-      // On travaille sur les indices des joueurs "classés"
       const ranked = withStrength.map(x => x.player);
       const nRanked = ranked.length;
 
-      // Seedings de départ intéressants (snake + inversions)
       const seeds = [];
-      // 1. Ordre pure force
       seeds.push([...ranked]);
-      // 2. Snake (1,3,5,7,8,6,4,2) adapté à la taille
       const snake = [];
       for (let i = 0; i < nRanked; i++) {
         if (i % 2 === 0) snake.push(ranked[i]);
         else snake.unshift(ranked[i]);
       }
       seeds.push(snake);
-      // 3. Alternance fort-faible
       const alt = [];
       let left = 0, right = nRanked - 1;
       while (left <= right) {
@@ -3112,10 +3229,8 @@
         if (left <= right) alt.push(ranked[right--]);
       }
       seeds.push(alt);
-      // 4. Inverse
       seeds.push([...ranked].reverse());
 
-      // + permutations aléatoires des classés
       const MAX_RANDOM = 350;
       for (let i = 0; i < MAX_RANDOM; i++) {
         seeds.push(shuffleArray(ranked));
@@ -3123,37 +3238,23 @@
 
       let bestOrder = null;
       let bestScore = Infinity;
+      const allPositions = Array.from({ length: n }, (_, i) => i);
 
-      // Pour chaque seed des classés, on place les non-classés dans des positions aléatoires
       seeds.forEach(rankedOrder => {
-        // Créer 8 slots vides, choisir aléatoirement les positions pour les "without"
-        const slots = new Array(8).fill(null);
-        const positions = shuffleArray([0, 1, 2, 3, 4, 5, 6, 7]);
-        const withoutPositions = positions.slice(0, withoutStrength.length);
-        const rankedPositions = positions.slice(withoutStrength.length).sort((a, b) => a - b);
-
-        withoutPositions.forEach((pos, i) => {
-          slots[pos] = withoutStrength[i];
-        });
-        rankedPositions.forEach((pos, i) => {
-          slots[pos] = rankedOrder[i];
-        });
-
-        // Quelques variantes de placement des without (re-tirage)
-        const variants = [slots];
-        for (let v = 0; v < 2; v++) {
-          const slots2 = new Array(8).fill(null);
-          const pos2 = shuffleArray([0, 1, 2, 3, 4, 5, 6, 7]);
-          const wPos = pos2.slice(0, withoutStrength.length);
-          const rPos = pos2.slice(withoutStrength.length).sort((a, b) => a - b);
-          wPos.forEach((pos, i) => { slots2[pos] = withoutStrength[i]; });
-          rPos.forEach((pos, i) => { slots2[pos] = rankedOrder[i]; });
-          variants.push(slots2);
+        const variants = [];
+        for (let v = 0; v < 3; v++) {
+          const slots = new Array(n).fill(null);
+          const pos = shuffleArray(allPositions);
+          const wPos = pos.slice(0, withoutStrength.length);
+          const rPos = pos.slice(withoutStrength.length).sort((a, b) => a - b);
+          wPos.forEach((p, i) => { slots[p] = withoutStrength[i]; });
+          rPos.forEach((p, i) => { slots[p] = rankedOrder[i]; });
+          variants.push(slots);
         }
 
         variants.forEach(order => {
-          if (order.some(p => !p) || order.length !== 8) return;
-          const score = computeImbalanceScore(order, strengthMap);
+          if (order.some(p => !p) || order.length !== n) return;
+          const score = computeImbalanceScore(order, strengthMap, mode);
           if (score < bestScore) {
             bestScore = score;
             bestOrder = order;
@@ -3161,15 +3262,13 @@
         });
       });
 
-      // Sécurité
-      if (!bestOrder || bestOrder.length !== 8) {
+      if (!bestOrder || bestOrder.length !== n) {
         return shuffleArray(playerList).map((p, idx) => ({
           id: idx, name: p.name, points: 0, played: 0,
           wins: 0, ties: 0, losses: 0, diff: 0
         }));
       }
 
-      // Ré-assigner les id 0..7 selon le nouvel ordre
       return bestOrder.map((p, idx) => ({
         id: idx,
         name: p.name,
@@ -3183,12 +3282,13 @@
     }
 
     function startTournament(mode) {
-      const count = mode === 8 ? 8 : (mode === 5 ? 5 : 4);
+      const count = playerCountForMode(mode);
       players = [];
       matchHistory = [];
       tournamentFinished = false;
       petitesFinalesDone = false;
       petitesFinalesPairings = null;
+      petitesFinalesStep = 0;
       allowGoBack = true;
       tournamentSaved = false;
       currentRound = 0;
@@ -3232,12 +3332,12 @@
         });
       }
 
-      // Mode 8 + Balanced FIP : réordonner les joueurs selon pts/match
+      // Mode 8 / 6 + Balanced FIP : réordonner les joueurs selon pts/match
       let usedBalanced = false;
-      if (mode === 8) {
-        const balancedCheckbox = document.getElementById('balanced-fip-8');
+      if (mode === 8 || mode === 6) {
+        const balancedCheckbox = document.getElementById(`balanced-fip-${mode}`);
         if (balancedCheckbox && balancedCheckbox.checked) {
-          players = reorderPlayersBalancedFIP(players);
+          players = reorderPlayersBalancedFIP(players, mode);
           usedBalanced = true;
         }
       }
@@ -3346,6 +3446,47 @@
             <button onclick="submitRound(8)">Enregistrer les scores & Tour suivant</button>
             <button class="btn-orange" id="btn-back-8" onclick="goBackOneRound(8)" disabled>↩ Tour précédent</button>
           </div>`;
+      } else if (mode === 6) {
+        const balancedBanner = usedBalanced
+          ? `<p style="text-align:center; font-size:0.85rem; color:#047857; background:#ecfdf5; border:1px solid #a7f3d0; border-radius:8px; padding:8px 12px; margin-bottom:14px;">
+               ✓ Rotation Balanced activée — équipes équilibrées selon le FIP (pts/match)
+             </p>`
+          : '';
+        document.getElementById('round-card-6').innerHTML = `
+          <h2 id="round-title-6">Tour 1 sur 6</h2>
+          ${balancedBanner}
+          <div id="waiting-box-6" class="waiting-box">Joueurs en attente : <span id="waiting-player-6">—</span></div>
+          <div class="court-grid" id="courts-6">
+            <div class="court">
+              <div class="court-header">
+                <span class="court-title">Terrain unique</span>
+                <div class="scores-prog-row">
+                  <span class="prognostic-value" id="c1-prog-left-6">–</span>
+                  <div class="scores-row-inner">
+                    <input type="number" id="c1-t1-score-6" class="score-input" min="0" max="16" oninput="handleScoreInput(this, 'c1-t2-score-6')">
+                    <input type="number" id="c1-t2-score-6" class="score-input" min="0" max="16" oninput="handleScoreInput(this, 'c1-t1-score-6')">
+                  </div>
+                  <span class="prognostic-value" id="c1-prog-right-6">–</span>
+                </div>
+              </div>
+              <div class="match-body">
+                <div class="team-side left">
+                  <span class="player-name" id="c1-t1-p1-6"></span>
+                  <span class="player-name" id="c1-t1-p2-6"></span>
+                </div>
+                <div class="vs-badge">VS</div>
+                <div class="team-side right">
+                  <span class="player-name" id="c1-t2-p1-6"></span>
+                  <span class="player-name" id="c1-t2-p2-6"></span>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div id="error-message-6" class="error-msg"></div>
+          <div class="nav-buttons">
+            <button onclick="submitRound(6)">Enregistrer les scores & Tour suivant</button>
+            <button class="btn-orange" id="btn-back-6" onclick="goBackOneRound(6)" disabled>↩ Tour précédent</button>
+          </div>`;
       } else {
         document.getElementById('round-card-5').innerHTML = `
           <h2 id="round-title-5">Tour 1 sur 5</h2>
@@ -3395,7 +3536,7 @@
 
     function loadRound(mode, roundIdx) {
       currentRound = roundIdx;
-      const totalRounds = mode === 8 ? 7 : 5;
+      const totalRounds = totalRegularRounds(mode);
       document.getElementById(`round-title-${mode}`).innerText = `Tour ${roundIdx + 1} sur ${totalRounds}`;
       document.getElementById(`error-message-${mode}`).innerText = '';
 
@@ -3404,6 +3545,15 @@
         renderCourtMatchup('c1', '8', rot.c1[0][0], rot.c1[0][1], rot.c1[1][0], rot.c1[1][1]);
         renderCourtMatchup('c2', '8', rot.c2[0][0], rot.c2[0][1], rot.c2[1][0], rot.c2[1][1]);
         ['c1-t1-score-8','c1-t2-score-8','c2-t1-score-8','c2-t2-score-8'].forEach(id => {
+          document.getElementById(id).value = '';
+        });
+      } else if (mode === 6) {
+        const rot = ROTATION_MATRIX_6[roundIdx];
+        renderCourtMatchup('c1', '6', rot.teams[0][0], rot.teams[0][1], rot.teams[1][0], rot.teams[1][1]);
+        const sitNames = rot.sit.map(i => players[i].name).join(' · ');
+        const waitEl = document.getElementById('waiting-player-6');
+        if (waitEl) waitEl.innerText = sitNames;
+        ['c1-t1-score-6','c1-t2-score-6'].forEach(id => {
           document.getElementById(id).value = '';
         });
       } else {
@@ -3415,7 +3565,6 @@
         });
       }
 
-      // Bouton "Tour précédent" : désactivé au tour 1 OU après un retour (jusqu'à re-validation)
       const backBtn = document.getElementById(`btn-back-${mode}`);
       if (backBtn) {
         backBtn.disabled = (roundIdx === 0) || !allowGoBack;
@@ -3607,8 +3756,52 @@
         if (currentRound < 6) {
           loadRound(8, currentRound + 1);
         } else {
-          // Fin des 7 tours → proposer les Petites Finales
           showEndOfRegularRounds();
+        }
+      } else if (mode === 6) {
+        const c1t1 = parseInt(document.getElementById('c1-t1-score-6').value);
+        const c1t2 = parseInt(document.getElementById('c1-t2-score-6').value);
+
+        if (isNaN(c1t1) || isNaN(c1t2) || (c1t1 + c1t2 !== 16)) {
+          document.getElementById('error-message-6').innerText = 'Veuillez saisir des scores qui totalisent exactement 16 points.';
+          return;
+        }
+
+        const rot = ROTATION_MATRIX_6[currentRound];
+        applyMatchResult(rot.teams[0][0], c1t1, c1t2);
+        applyMatchResult(rot.teams[0][1], c1t1, c1t2);
+        applyMatchResult(rot.teams[1][0], c1t2, c1t1);
+        applyMatchResult(rot.teams[1][1], c1t2, c1t1);
+
+        const eloDelta = applyEloForMatch(rot.teams[0][0], rot.teams[0][1], rot.teams[1][0], rot.teams[1][1], c1t1, c1t2);
+
+        matchHistory.push({
+          round: currentRound + 1,
+          sit: rot.sit.map(i => players[i].name).join(' · '),
+          matches: [
+            {
+              team1: `${players[rot.teams[0][0]].name} & ${players[rot.teams[0][1]].name}`,
+              score1: c1t1,
+              team2: `${players[rot.teams[1][0]].name} & ${players[rot.teams[1][1]].name}`,
+              score2: c1t2
+            }
+          ],
+          undoData: {
+            type: '6',
+            roundIdx: currentRound,
+            scores: { c1t1, c1t2 },
+            eloDeltas: { c1: eloDelta }
+          }
+        });
+
+        allowGoBack = true;
+        updateLeaderboard(6);
+        updateHistory(6);
+
+        if (currentRound < 5) {
+          loadRound(6, currentRound + 1);
+        } else {
+          showEndOfRegularRounds6();
         }
       } else {
         const c1t1 = parseInt(document.getElementById('c1-t1-score-5').value);
@@ -3647,7 +3840,6 @@
         });
 
         allowGoBack = true;
-
         updateLeaderboard(5);
         updateHistory(5);
 
@@ -3849,6 +4041,192 @@
       document.getElementById('archive-card-8').classList.remove('hidden');
     }
 
+
+    // ========== PETITES FINALES (mode 6 — 1 terrain, suite optionnelle) ==========
+
+    function showEndOfRegularRounds6() {
+      tournamentFinished = false;
+      document.getElementById('end-actions-6').style.display = 'none';
+      document.getElementById('archive-card-6').classList.add('hidden');
+
+      document.getElementById('round-card-6').innerHTML = `
+        <h2 style="text-align:center; color: var(--accent);">🏆 6 tours terminés !</h2>
+        <p style="text-align:center; color: var(--text-muted); margin: 12px 0 20px;">
+          Vous pouvez jouer les Petites Finales (optionnel, enchaînables) ou sauvegarder directement.
+        </p>
+        <div class="nav-buttons" style="flex-direction:column; gap:10px;">
+          <button onclick="startPetitesFinales6()">Jouer les Petites Finales</button>
+          <button class="btn-secondary" onclick="skipPetitesFinalesAndFinish6()">Sauvegarder sans Petites Finales</button>
+          <button class="btn-orange" onclick="goBackOneRound(6)">↩ Tour précédent</button>
+          <button class="btn-secondary" onclick="startNewTournament(6)">Nouveau tournoi</button>
+        </div>
+      `;
+    }
+
+    function skipPetitesFinalesAndFinish6() {
+      tournamentFinished = true;
+      petitesFinalesDone = false;
+      document.getElementById('round-card-6').innerHTML = `
+        <h2 style="text-align:center; color: var(--accent);">🏆 Tournoi terminé ! 🏆</h2>
+        <div class="nav-buttons" style="margin-top:16px;">
+          <button class="btn-orange" onclick="goBackOneRound(6)">↩ Tour précédent</button>
+        </div>`;
+      document.getElementById('end-actions-6').style.display = 'flex';
+      document.getElementById('archive-card-6').classList.remove('hidden');
+      updateLeaderboard(6);
+    }
+
+    function startPetitesFinales6() {
+      const sorted = getSortedPlayersForPairings();
+      petitesFinalesPairings = {
+        rankedIds: sorted.map(p => p.id),
+        step: 0
+      };
+      petitesFinalesStep = 0;
+      petitesFinalesDone = false;
+      renderPetitesFinalesMatch6();
+    }
+
+    function renderPetitesFinalesMatch6() {
+      const p = petitesFinalesPairings;
+      if (!p || !p.rankedIds) return;
+      const step = p.step || 0;
+      const seq = PF_SEQUENCE_6[step];
+      if (!seq) return;
+
+      const ids = p.rankedIds;
+      const t1 = [ids[seq.teams[0][0]], ids[seq.teams[0][1]]];
+      const t2 = [ids[seq.teams[1][0]], ids[seq.teams[1][1]]];
+      p.currentTeams = [t1, t2];
+
+      const sitIds = ids.filter(id => !t1.includes(id) && !t2.includes(id));
+      const sitNames = sitIds.map(id => players[id].name).join(' · ');
+
+      document.getElementById('round-card-6').innerHTML = `
+        <h2 id="round-title-6">Petites Finales ${step + 1} / ${PF_SEQUENCE_6.length}</h2>
+        <p style="text-align:center; color: var(--text-muted); margin-bottom: 10px; font-size: 0.9rem;">
+          ${seq.label}
+        </p>
+        <div id="waiting-box-6" class="waiting-box">Joueurs en attente : <span id="waiting-player-6">${sitNames}</span></div>
+        <div class="court-grid" id="courts-6">
+          <div class="court">
+            <div class="court-header">
+              <span class="court-title">Terrain unique</span>
+              <div class="scores-prog-row">
+                <span class="prognostic-value" id="c1-prog-left-6">–</span>
+                <div class="scores-row-inner">
+                  <input type="number" id="c1-t1-score-6" class="score-input" min="0" max="16" oninput="handleScoreInput(this, 'c1-t2-score-6')">
+                  <input type="number" id="c1-t2-score-6" class="score-input" min="0" max="16" oninput="handleScoreInput(this, 'c1-t1-score-6')">
+                </div>
+                <span class="prognostic-value" id="c1-prog-right-6">–</span>
+              </div>
+            </div>
+            <div class="match-body">
+              <div class="team-side left">
+                <span class="player-name" id="c1-t1-p1-6"></span>
+                <span class="player-name" id="c1-t1-p2-6"></span>
+              </div>
+              <div class="vs-badge">VS</div>
+              <div class="team-side right">
+                <span class="player-name" id="c1-t2-p1-6"></span>
+                <span class="player-name" id="c1-t2-p2-6"></span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div id="error-message-6" class="error-msg"></div>
+        <div class="nav-buttons">
+          <button onclick="submitPetitesFinales6()">Enregistrer le match</button>
+          <button class="btn-secondary" onclick="finishTournamentAfterPf6()">Terminer le tournoi</button>
+          <button class="btn-orange" id="btn-back-6" onclick="goBackOneRound(6)">↩ Tour précédent</button>
+        </div>`;
+
+      renderCourtMatchup('c1', '6', t1[0], t1[1], t2[0], t2[1]);
+      updateLeaderboard(6);
+      if (!isSpectator && currentLiveId) pushLiveState();
+    }
+
+    function submitPetitesFinales6() {
+      const p = petitesFinalesPairings;
+      if (!p || !p.currentTeams) return;
+      const c1t1 = parseInt(document.getElementById('c1-t1-score-6').value);
+      const c1t2 = parseInt(document.getElementById('c1-t2-score-6').value);
+      if (isNaN(c1t1) || isNaN(c1t2) || (c1t1 + c1t2 !== 16)) {
+        document.getElementById('error-message-6').innerText = 'Veuillez saisir des scores qui totalisent exactement 16 points.';
+        return;
+      }
+
+      const t1 = p.currentTeams[0];
+      const t2 = p.currentTeams[1];
+      applyMatchResult(t1[0], c1t1, c1t2);
+      applyMatchResult(t1[1], c1t1, c1t2);
+      applyMatchResult(t2[0], c1t2, c1t1);
+      applyMatchResult(t2[1], c1t2, c1t1);
+      const eloDelta = applyEloForMatch(t1[0], t1[1], t2[0], t2[1], c1t1, c1t2);
+
+      const step = p.step || 0;
+      const sitIds = p.rankedIds.filter(id => !t1.includes(id) && !t2.includes(id));
+      matchHistory.push({
+        round: `PF ${step + 1}`,
+        isPetitesFinales: true,
+        sit: sitIds.map(id => players[id].name).join(' · '),
+        matches: [
+          {
+            team1: `${players[t1[0]].name} & ${players[t1[1]].name}`,
+            score1: c1t1,
+            team2: `${players[t2[0]].name} & ${players[t2[1]].name}`,
+            score2: c1t2
+          }
+        ],
+        undoData: {
+          type: 'petites6',
+          step: step,
+          pairings: JSON.parse(JSON.stringify(p)),
+          scores: { c1t1, c1t2 },
+          eloDeltas: { c1: eloDelta }
+        }
+      });
+
+      allowGoBack = true;
+      p.step = step + 1;
+      petitesFinalesStep = p.step;
+
+      updateLeaderboard(6);
+      updateHistory(6);
+
+      if (p.step >= PF_SEQUENCE_6.length) {
+        petitesFinalesDone = true;
+        finishTournamentAfterPf6(true);
+      } else {
+        document.getElementById('round-card-6').innerHTML = `
+          <h2 style="text-align:center; color: var(--accent);">✓ Petites Finales ${step + 1} enregistrées</h2>
+          <p style="text-align:center; color: var(--text-muted); margin: 12px 0 20px;">
+            Prochain match : ${PF_SEQUENCE_6[p.step].label}<br>
+            Ou terminez le tournoi si le temps est écoulé.
+          </p>
+          <div class="nav-buttons" style="flex-direction:column; gap:10px;">
+            <button onclick="renderPetitesFinalesMatch6()">Continuer — ${PF_SEQUENCE_6[p.step].label}</button>
+            <button class="btn-secondary" onclick="finishTournamentAfterPf6()">Terminer le tournoi</button>
+            <button class="btn-orange" onclick="goBackOneRound(6)">↩ Tour précédent</button>
+          </div>`;
+        if (!isSpectator && currentLiveId) pushLiveState();
+      }
+    }
+
+    function finishTournamentAfterPf6(allDone) {
+      tournamentFinished = true;
+      if (allDone) petitesFinalesDone = true;
+      document.getElementById('round-card-6').innerHTML = `
+        <h2 style="text-align:center; color: var(--accent);">🏆 Tournoi terminé${allDone ? ' (PF complètes)' : ''} ! 🏆</h2>
+        <div class="nav-buttons" style="margin-top:16px;">
+          <button class="btn-orange" onclick="goBackOneRound(6)">↩ Tour précédent</button>
+        </div>`;
+      document.getElementById('end-actions-6').style.display = 'flex';
+      document.getElementById('archive-card-6').classList.remove('hidden');
+      updateLeaderboard(6);
+      if (!isSpectator && currentLiveId) pushLiveState();
+    }
+
     // ========== RETOUR / CORRECTION D'UN TOUR ==========
 
     function goBackOneRound(mode) {
@@ -3881,6 +4259,16 @@
           reverseEloForMatch(rot.c1[0][0], rot.c1[0][1], rot.c1[1][0], rot.c1[1][1], ud.eloDeltas.c1);
           reverseEloForMatch(rot.c2[0][0], rot.c2[0][1], rot.c2[1][0], rot.c2[1][1], ud.eloDeltas.c2);
         }
+      } else if (ud.type === '6') {
+        const rot = ROTATION_MATRIX_6[ud.roundIdx];
+        const s = ud.scores;
+        reverseMatchResult(rot.teams[0][0], s.c1t1, s.c1t2);
+        reverseMatchResult(rot.teams[0][1], s.c1t1, s.c1t2);
+        reverseMatchResult(rot.teams[1][0], s.c1t2, s.c1t1);
+        reverseMatchResult(rot.teams[1][1], s.c1t2, s.c1t1);
+        if (ud.eloDeltas) {
+          reverseEloForMatch(rot.teams[0][0], rot.teams[0][1], rot.teams[1][0], rot.teams[1][1], ud.eloDeltas.c1);
+        }
       } else if (ud.type === '5') {
         const rot = ROTATION_MATRIX_5[ud.roundIdx];
         const s = ud.scores;
@@ -3891,6 +4279,22 @@
         if (ud.eloDeltas) {
           reverseEloForMatch(rot.teams[0][0], rot.teams[0][1], rot.teams[1][0], rot.teams[1][1], ud.eloDeltas.c1);
         }
+      } else if (ud.type === 'petites6') {
+        const p = ud.pairings;
+        const s = ud.scores;
+        const t1 = p.currentTeams[0];
+        const t2 = p.currentTeams[1];
+        reverseMatchResult(t1[0], s.c1t1, s.c1t2);
+        reverseMatchResult(t1[1], s.c1t1, s.c1t2);
+        reverseMatchResult(t2[0], s.c1t2, s.c1t1);
+        reverseMatchResult(t2[1], s.c1t2, s.c1t1);
+        if (ud.eloDeltas) {
+          reverseEloForMatch(t1[0], t1[1], t2[0], t2[1], ud.eloDeltas.c1);
+        }
+        petitesFinalesDone = false;
+        petitesFinalesPairings = JSON.parse(JSON.stringify(ud.pairings));
+        petitesFinalesPairings.step = ud.step;
+        petitesFinalesStep = ud.step;
       } else if (ud.type === 'petites') {
         const p = ud.pairings;
         const s = ud.scores;
@@ -3916,9 +4320,7 @@
 
       // 3. Recharger l'écran correspondant avec les scores pré-remplis
       if (ud.type === 'petites') {
-        // Revenir à l'écran des Petites Finales avec scores pré-remplis
         startPetitesFinales();
-        // Pré-remplir les scores
         const s = ud.scores;
         document.getElementById('c1-t1-score-8').value = s.c1t1;
         document.getElementById('c1-t2-score-8').value = s.c1t2;
@@ -3926,26 +4328,35 @@
         document.getElementById('c2-t2-score-8').value = s.c2t2;
         document.getElementById('end-actions-8').style.display = 'none';
         document.getElementById('archive-card-8').classList.add('hidden');
+      } else if (ud.type === 'petites6') {
+        renderPetitesFinalesMatch6();
+        const s = ud.scores;
+        document.getElementById('c1-t1-score-6').value = s.c1t1;
+        document.getElementById('c1-t2-score-6').value = s.c1t2;
+        document.getElementById('end-actions-6').style.display = 'none';
+        document.getElementById('archive-card-6').classList.add('hidden');
       } else {
-        // Tour normal
         const roundIdx = ud.roundIdx;
         currentRound = roundIdx;
-        // Reconstruire l'UI du tour (loadRound met les noms, puis on pré-remplit les scores)
-        // On force le rebuild du HTML des terrains si on vient d'un écran "terminé"
         if (mode === 8) {
           rebuildRoundCard8();
+        } else if (mode === 6) {
+          rebuildRoundCard6();
         } else {
           rebuildRoundCard5();
         }
         loadRound(mode, roundIdx);
 
-        // Pré-remplir les scores
         if (mode === 8) {
           const s = ud.scores;
           document.getElementById('c1-t1-score-8').value = s.c1t1;
           document.getElementById('c1-t2-score-8').value = s.c1t2;
           document.getElementById('c2-t1-score-8').value = s.c2t1;
           document.getElementById('c2-t2-score-8').value = s.c2t2;
+        } else if (mode === 6) {
+          const s = ud.scores;
+          document.getElementById('c1-t1-score-6').value = s.c1t1;
+          document.getElementById('c1-t2-score-6').value = s.c1t2;
         } else {
           const s = ud.scores;
           document.getElementById('c1-t1-score-5').value = s.c1t1;
@@ -4020,6 +4431,43 @@
         </div>`;
     }
 
+    function rebuildRoundCard6() {
+      document.getElementById('round-card-6').innerHTML = `
+        <h2 id="round-title-6">Tour 1 sur 6</h2>
+        <div id="waiting-box-6" class="waiting-box">Joueurs en attente : <span id="waiting-player-6">—</span></div>
+        <div class="court-grid" id="courts-6">
+          <div class="court">
+            <div class="court-header">
+              <span class="court-title">Terrain unique</span>
+              <div class="scores-prog-row">
+                <span class="prognostic-value" id="c1-prog-left-6">–</span>
+                <div class="scores-row-inner">
+                  <input type="number" id="c1-t1-score-6" class="score-input" min="0" max="16" oninput="handleScoreInput(this, 'c1-t2-score-6')">
+                  <input type="number" id="c1-t2-score-6" class="score-input" min="0" max="16" oninput="handleScoreInput(this, 'c1-t1-score-6')">
+                </div>
+                <span class="prognostic-value" id="c1-prog-right-6">–</span>
+              </div>
+            </div>
+            <div class="match-body">
+              <div class="team-side left">
+                <span class="player-name" id="c1-t1-p1-6"></span>
+                <span class="player-name" id="c1-t1-p2-6"></span>
+              </div>
+              <div class="vs-badge">VS</div>
+              <div class="team-side right">
+                <span class="player-name" id="c1-t2-p1-6"></span>
+                <span class="player-name" id="c1-t2-p2-6"></span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div id="error-message-6" class="error-msg"></div>
+        <div class="nav-buttons">
+          <button onclick="submitRound(6)">Enregistrer les scores & Tour suivant</button>
+          <button class="btn-orange" id="btn-back-6" onclick="goBackOneRound(6)">↩ Tour précédent</button>
+        </div>`;
+    }
+
     function rebuildRoundCard5() {
       document.getElementById('round-card-5').innerHTML = `
         <h2 id="round-title-5">Tour 1 sur 5</h2>
@@ -4071,7 +4519,11 @@
     }
 
     function updateLeaderboard(mode) {
-      const totalMatches = mode === 8 ? (petitesFinalesDone ? 8 : 7) : (mode === 5 ? 4 : (setsScore4[0] + setsScore4[1] || 1));
+      let totalMatches;
+      if (mode === 8) totalMatches = petitesFinalesDone ? 8 : 7;
+      else if (mode === 6) totalMatches = 4 + (petitesFinalesStep || 0);
+      else if (mode === 5) totalMatches = 4;
+      else totalMatches = (setsScore4[0] + setsScore4[1] || 1);
       const sorted = [...players].sort((a, b) => {
         if (b.points !== a.points) return b.points - a.points;
         if (b.diff !== a.diff) return b.diff - a.diff;
@@ -4271,7 +4723,7 @@
               <button class="btn-secondary" style="width:auto;padding:4px 10px;font-size:0.8rem;" onclick="deleteTournament(${t.id})">Supprimer</button>
             </span>
           </h3>
-          ${(t.ranking || []).slice(0, mode === 8 ? 8 : (mode === 5 ? 5 : 4)).map((p) => {
+          ${(t.ranking || []).slice(0, playerCountForMode(mode)).map((p) => {
             const r = p.rank || 0;
             const cls = r === 1 ? 'gold' : r === 2 ? 'silver' : r === 3 ? 'bronze' : '';
             const diffStr = p.diff > 0 ? `+${p.diff}` : p.diff;
@@ -4994,7 +5446,9 @@
         ? { bg: [255, 237, 213], fg: [194, 65, 12], label: '4 joueurs' }
         : typeNum === '5'
           ? { bg: [254, 243, 199], fg: [146, 64, 14], label: '5 joueurs' }
-          : { bg: [219, 234, 254], fg: [30, 64, 175], label: '8 joueurs' };
+          : typeNum === '6'
+            ? { bg: [237, 233, 254], fg: [109, 40, 217], label: '6 joueurs' }
+            : { bg: [219, 234, 254], fg: [30, 64, 175], label: '8 joueurs' };
 
       const ensureSpace = (needed) => {
         if (y + needed > pageH - 18) {
@@ -5876,8 +6330,9 @@
           });
 
           renderArchiveForMode(8);
+          renderArchiveForMode(6);
           renderArchiveForMode(5);
-      renderArchiveForMode(4);
+          renderArchiveForMode(4);
           if (document.getElementById('panel-fip').classList.contains('active')) renderFIP();
           alert(`${newOnes.length} tournoi(s) importé(s) dans Firebase.\n${mergedPlayers.length} joueur(s) connus au total.`);
           closeSettingsOverlay();
@@ -5910,6 +6365,7 @@
       tournamentFinished = false;
       petitesFinalesDone = false;
       petitesFinalesPairings = null;
+      petitesFinalesStep = 0;
       allowGoBack = true;
       tournamentSaved = false;
       currentRound = 0;
@@ -5978,6 +6434,7 @@
           tournamentFinished: tournamentFinished,
           petitesFinalesDone: petitesFinalesDone,
           petitesFinalesPairings: petitesFinalesPairings,
+          petitesFinalesStep: petitesFinalesStep,
           pairs4: pairs4,
           setsScore4: setsScore4,
           currentSetNumber4: currentSetNumber4,
@@ -6050,7 +6507,7 @@
 
       // Masquer setup / archives / tabs
       document.querySelectorAll('.tab-btn, .tabs').forEach(el => el.style.display = 'none');
-      ['setup-card-8','setup-card-5','archive-card-8','archive-card-5'].forEach(id => {
+      ['setup-card-8','setup-card-6','setup-card-5','archive-card-8','archive-card-6','archive-card-5'].forEach(id => {
         const el = document.getElementById(id);
         if (el) el.classList.add('hidden');
       });
@@ -6093,16 +6550,19 @@
       tournamentFinished = !!data.tournamentFinished;
       petitesFinalesDone = !!data.petitesFinalesDone;
       petitesFinalesPairings = data.petitesFinalesPairings || null;
+      petitesFinalesStep = data.petitesFinalesStep || 0;
 
       // Afficher le bon panel
       document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
-      const panel = document.getElementById(currentMode === 8 ? 'panel-8' : 'panel-5');
+      const panel = document.getElementById(`panel-${currentMode}`);
       if (panel) panel.classList.add('active');
 
       document.getElementById('main-subtitle').textContent =
         currentMode === 8
           ? '8 Joueurs • Live • Lecture seule'
-          : '5 Joueurs • Live • Lecture seule';
+          : currentMode === 6
+            ? '6 Joueurs • Live • Lecture seule'
+            : '5 Joueurs • Live • Lecture seule';
 
       // Afficher les cartes
       const setup = document.getElementById(`setup-card-${currentMode}`);
@@ -6121,16 +6581,26 @@
             <p style="text-align:center; color:var(--text-muted); margin-top:8px;">Classement final ci-dessous</p>`;
         }
       } else if (petitesFinalesPairings && !petitesFinalesDone && currentMode === 8) {
-        // Afficher les Petites Finales en lecture seule
         if (roundCard) {
           roundCard.classList.remove('hidden');
           renderSpectatorPetitesFinales();
+        }
+      } else if (petitesFinalesPairings && !petitesFinalesDone && currentMode === 6) {
+        if (roundCard) {
+          roundCard.classList.remove('hidden');
+          renderPetitesFinalesMatch6();
+          roundCard.querySelectorAll('input.score-input').forEach(inp => {
+            inp.disabled = true;
+            inp.style.opacity = '0.7';
+          });
+          roundCard.querySelectorAll('.nav-buttons').forEach(n => n.style.display = 'none');
         }
       } else {
         // Tour normal
         if (roundCard) {
           roundCard.classList.remove('hidden');
           if (currentMode === 8) rebuildRoundCard8();
+          else if (currentMode === 6) rebuildRoundCard6();
           else rebuildRoundCard5();
           // Désactiver inputs
           roundCard.querySelectorAll('input.score-input').forEach(inp => {
@@ -6281,6 +6751,7 @@
             cloudData = { tournaments, knownPlayers, eloRatings, rackets };
             archiveReady = true;
             renderArchiveForMode(8);
+            renderArchiveForMode(6);
             renderArchiveForMode(5);
             renderArchiveForMode(4);
             if (document.getElementById('panel-fip').classList.contains('active')) renderFIP();
@@ -6599,6 +7070,7 @@
 
     // INIT
     buildPlayerInputs(8);
+    buildPlayerInputs(6);
     buildPlayerInputs(5);
     buildPlayerInputs(4);
     updateTestModeUI(); // affiche la bannière si mode test déjà activé
@@ -6608,6 +7080,7 @@
 
     // Rendu initial (sera rafraîchi dès le premier snapshot)
     renderArchiveForMode(8);
+    renderArchiveForMode(6);
     renderArchiveForMode(5);
     renderArchiveForMode(4);
 

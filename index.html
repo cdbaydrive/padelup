@@ -47,7 +47,7 @@
     }
     .tab-btn {
       flex: 1;
-      padding: 10px 6px;
+      padding: 10px 4px;
       border: none;
       background: transparent;
       color: var(--text-muted);
@@ -57,6 +57,13 @@
       cursor: pointer;
       transition: all 0.2s;
       border-bottom: 3px solid transparent;
+      white-space: normal;
+    }
+    @media (max-width: 480px) {
+      .tab-btn {
+        font-size: 0.78rem;
+        padding: 10px 2px;
+      }
     }
     .tab-btn:hover { background: #f8fafc; color: var(--text); }
     .tab-btn.active {
@@ -1145,11 +1152,11 @@
   <p class="subtitle" id="main-subtitle">Matchs à 4 • Sets (1 jeu = 4 pts)</p>
 
   <div class="tabs">
-    <button class="tab-btn active" data-tab="4" onclick="switchTab('4')">Matchs<br>à 4</button>
-    <button class="tab-btn" data-tab="5" onclick="switchTab('5')">Matchs<br>à 5</button>
-    <button class="tab-btn" data-tab="6" onclick="switchTab('6')">Matchs<br>à 6</button>
-    <button class="tab-btn" data-tab="8" onclick="switchTab('8')">Matchs<br>à 8</button>
-    <button class="tab-btn" data-tab="1" onclick="switchTab('1')">Matchs<br>libres</button>
+    <button class="tab-btn active" data-tab="4" onclick="switchTab('4')">à 4</button>
+    <button class="tab-btn" data-tab="5" onclick="switchTab('5')">à 5</button>
+    <button class="tab-btn" data-tab="6" onclick="switchTab('6')">à 6</button>
+    <button class="tab-btn" data-tab="8" onclick="switchTab('8')">à 8</button>
+    <button class="tab-btn" data-tab="1" onclick="switchTab('1')">Libre</button>
     <button class="tab-btn" data-tab="fip" onclick="switchTab('fip')">Padel <span style="color:#f97316;">Up</span><br>Ranking</button>
   </div>
 
@@ -2017,7 +2024,9 @@
     let suppressArchivePush = false; // true pendant l'application d'un snapshot distant
 
     // ===== Mode Test (chemin /archive_test) =====
-    let isTestMode = localStorage.getItem('padelup_test_mode') === '1';
+    // Toujours démarrer en production (le mode test se active uniquement via Réglages)
+    let isTestMode = false;
+    try { localStorage.setItem('padelup_test_mode', '0'); } catch (e) { /* ignore */ }
 
     function getArchivePath() {
       return isTestMode ? 'archive_test' : 'archive';

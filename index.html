@@ -480,6 +480,34 @@
       box-sizing: border-box;
       overflow: hidden;
     }
+    #players-overlay .live-modal {
+      max-width: 480px;
+      overflow: visible;
+    }
+    .player-fields {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+      gap: 8px;
+      width: 100%;
+      min-width: 0;
+      margin-bottom: 8px;
+    }
+    .player-fields input {
+      width: 100%;
+      min-width: 0;
+      max-width: 100%;
+      box-sizing: border-box;
+    }
+    .player-edit-actions {
+      display: flex;
+      gap: 8px;
+      margin-top: 8px;
+    }
+    .player-edit-actions button {
+      flex: 1;
+      min-width: 0;
+    }
+
     .live-modal h3 { color: var(--court-bg); margin-bottom: 8px; font-size: 1.2rem; }
     .live-modal p { color: var(--text-muted); font-size: 0.9rem; margin-bottom: 16px; }
     .live-close {
@@ -677,6 +705,19 @@
         content: none;
       }
     }
+
+
+    /* Carte fin de tournoi : entre titre terminé et classement */
+    .finish-actions-card h2 { text-align: center; border-bottom: none; margin-bottom: 8px; }
+    .finish-status {
+      text-align: center;
+      font-weight: 700;
+      font-size: 0.95rem;
+      margin-bottom: 12px;
+    }
+    .finish-status.pending { color: #c2410c; }
+    .finish-status.saved { color: var(--accent); }
+    .spectator-mode .finish-actions-card { display: none !important; }
 
     /* Raquette joueur */
     .racket-form {
@@ -1263,6 +1304,16 @@
       </div>
     </div>
 
+
+    <div id="finish-actions-4" class="card finish-actions-card hidden">
+      <h2>Enregistrer</h2>
+      <p id="finish-status-4" class="finish-status pending">Non enregistré</p>
+      <div class="actions-row">
+        <button type="button" id="btn-save-4" onclick="saveCurrentTournament(4)">💾 Sauvegarder ce tournoi</button>
+        <button type="button" id="btn-new-4" onclick="startFreshSession(4)" disabled>Nouveau match</button>
+      </div>
+    </div>
+
     <div id="leaderboard-card-4" class="card hidden">
       <h2>Classement en direct (4 joueurs)</h2>
       <table>
@@ -1274,10 +1325,6 @@
         <tbody id="leaderboard-body-4"></tbody>
       </table>
       <p class="legend">1 jeu = 4 points • W = Set gagné • T = Set nul • L = Set perdu • Diff = Points marqués − Points encaissés</p>
-      <div class="actions-row" id="end-actions-4" style="display:none;">
-        <button onclick="saveCurrentTournament(4)">💾 Sauvegarder ce tournoi</button>
-        <button onclick="startNewTournament(4)">Nouveau match</button>
-      </div>
     </div>
 
     <div id="history-card-4" class="card hidden">
@@ -1376,6 +1423,16 @@
       </div>
     </div>
 
+
+    <div id="finish-actions-8" class="card finish-actions-card hidden">
+      <h2>Enregistrer</h2>
+      <p id="finish-status-8" class="finish-status pending">Non enregistré</p>
+      <div class="actions-row">
+        <button type="button" id="btn-save-8" onclick="saveCurrentTournament(8)">💾 Sauvegarder ce tournoi</button>
+        <button type="button" id="btn-new-8" onclick="startFreshSession(8)" disabled>Nouveau tournoi</button>
+      </div>
+    </div>
+
     <div id="leaderboard-card-8" class="card hidden">
       <h2>Classement en direct (8 joueurs)</h2>
       <table>
@@ -1387,10 +1444,6 @@
         <tbody id="leaderboard-body-8"></tbody>
       </table>
       <p class="legend">W = Victoire • T = Match nul • L = Défaite • Diff = Points marqués − Points encaissés</p>
-      <div class="actions-row" id="end-actions-8" style="display:none;">
-        <button onclick="saveCurrentTournament(8)">💾 Sauvegarder ce tournoi</button>
-        <button class="btn-secondary" onclick="startNewTournament(8)">Nouveau tournoi</button>
-      </div>
     </div>
 
     <div id="history-card-8" class="card hidden">
@@ -1454,6 +1507,16 @@
       </div>
     </div>
 
+
+    <div id="finish-actions-5" class="card finish-actions-card hidden">
+      <h2>Enregistrer</h2>
+      <p id="finish-status-5" class="finish-status pending">Non enregistré</p>
+      <div class="actions-row">
+        <button type="button" id="btn-save-5" onclick="saveCurrentTournament(5)">💾 Sauvegarder ce tournoi</button>
+        <button type="button" id="btn-new-5" onclick="startFreshSession(5)" disabled>Nouveau tournoi</button>
+      </div>
+    </div>
+
     <div id="leaderboard-card-5" class="card hidden">
       <h2>Classement en direct (5 joueurs)</h2>
       <table>
@@ -1465,10 +1528,6 @@
         <tbody id="leaderboard-body-5"></tbody>
       </table>
       <p class="legend">W = Victoire • T = Match nul • L = Défaite • Diff = Points marqués − Points encaissés</p>
-      <div class="actions-row" id="end-actions-5" style="display:none;">
-        <button onclick="saveCurrentTournament(5)">💾 Sauvegarder ce tournoi</button>
-        <button class="btn-secondary" onclick="startNewTournament(5)">Nouveau tournoi</button>
-      </div>
     </div>
 
     <div id="history-card-5" class="card hidden">
@@ -1549,6 +1608,16 @@
       </div>
     </div>
 
+
+    <div id="finish-actions-6" class="card finish-actions-card hidden">
+      <h2>Enregistrer</h2>
+      <p id="finish-status-6" class="finish-status pending">Non enregistré</p>
+      <div class="actions-row">
+        <button type="button" id="btn-save-6" onclick="saveCurrentTournament(6)">💾 Sauvegarder ce tournoi</button>
+        <button type="button" id="btn-new-6" onclick="startFreshSession(6)" disabled>Nouveau tournoi</button>
+      </div>
+    </div>
+
     <div id="leaderboard-card-6" class="card hidden">
       <h2>Classement en direct (6 joueurs)</h2>
       <table>
@@ -1560,10 +1629,6 @@
         <tbody id="leaderboard-body-6"></tbody>
       </table>
       <p class="legend">W = Victoire • T = Match nul • L = Défaite • Diff = Points marqués − Points encaissés</p>
-      <div class="actions-row" id="end-actions-6" style="display:none;">
-        <button onclick="saveCurrentTournament(6)">💾 Sauvegarder ce tournoi</button>
-        <button class="btn-secondary" onclick="startNewTournament(6)">Nouveau tournoi</button>
-      </div>
     </div>
 
     <div id="history-card-6" class="card hidden">
@@ -1673,6 +1738,16 @@
       </div>
     </div>
 
+
+    <div id="finish-actions-1" class="card finish-actions-card hidden">
+      <h2>Enregistrer</h2>
+      <p id="finish-status-1" class="finish-status pending">Non enregistré</p>
+      <div class="actions-row">
+        <button type="button" id="btn-save-1" onclick="saveCurrentTournament(1)">💾 Sauvegarder ce match</button>
+        <button type="button" id="btn-new-1" onclick="startFreshSession(1)" disabled>Nouveau match</button>
+      </div>
+    </div>
+
     <div id="leaderboard-card-1" class="card hidden">
       <h2>Résultat du match libre</h2>
       <table>
@@ -1684,10 +1759,6 @@
         <tbody id="leaderboard-body-1"></tbody>
       </table>
       <p class="legend">Match libre · compte comme 1 tournoi dans le ranking Padel Up</p>
-      <div class="actions-row" id="end-actions-1" style="display:none;">
-        <button type="button" id="btn-save-1" onclick="saveCurrentTournament(1)">💾 Sauvegarder ce match</button>
-        <button type="button" class="btn-secondary" onclick="startNewFreeMatch()">Nouveau match</button>
-      </div>
     </div>
 
     <div id="history-card-1" class="card hidden">
@@ -1765,7 +1836,26 @@
 
   <!-- Lien Réglages en bas de page (scroll avec le contenu) -->
   <div id="footer-settings">
+    <a href="#" onclick="event.preventDefault(); openPlayersOverlay();">Joueurs</a>
+    <span style="color:#cbd5e1;"> · </span>
     <a href="#" onclick="event.preventDefault(); openSettingsOverlay();">Réglages</a>
+  </div>
+
+  <div id="players-overlay" class="live-overlay hidden" onclick="if(event.target===this)closePlayersOverlay()">
+    <div class="live-modal" style="max-width:480px;">
+      <button class="live-close" onclick="closePlayersOverlay()" aria-label="Fermer">×</button>
+      <h3>Joueurs</h3>
+      <p style="color:var(--text-muted); font-size:0.85rem; margin-bottom:12px;">
+        Créer un membre est ouvert à tous. Modifier un prénom ou ajouter un nom demande le code Réglages. L’identifiant ne change pas.
+      </p>
+      <div class="player-fields">
+        <input type="text" id="new-player-first" placeholder="Prénom" autocomplete="off">
+        <input type="text" id="new-player-last" placeholder="Nom (optionnel)" autocomplete="off">
+      </div>
+      <button type="button" onclick="submitNewPlayer()">Ajouter ce joueur</button>
+      <p id="new-player-error" class="error-msg" style="min-height:1.2em;"></p>
+      <div id="players-list" style="margin-top:8px; max-height:50vh; overflow-y:auto;"></div>
+    </div>
   </div>
 
   <input type="file" id="import-file" accept=".json,.txt,application/json,text/plain" style="display:none" onchange="importArchive(event)">
@@ -2291,6 +2381,10 @@
         knownPlayers: Array.isArray(data.knownPlayers) ? data.knownPlayers : [],
         eloRatings: (data.eloRatings && typeof data.eloRatings === 'object') ? data.eloRatings : {},
         rackets: (data.rackets && typeof data.rackets === 'object') ? data.rackets : (cloudData.rackets || {}),
+        playerRegistry: Array.isArray(data.playerRegistry) ? data.playerRegistry : (cloudData.playerRegistry || []),
+        deletedPlayerKeys: Array.isArray(data.deletedPlayerKeys) ? data.deletedPlayerKeys : (cloudData.deletedPlayerKeys || []),
+        eloById: (data.eloById && typeof data.eloById === 'object') ? data.eloById : (cloudData.eloById || {}),
+        racketsById: (data.racketsById && typeof data.racketsById === 'object') ? data.racketsById : (cloudData.racketsById || {}),
         eloRecalculated: data.eloRecalculated != null ? !!data.eloRecalculated : !!cloudData.eloRecalculated
       };
       pushArchiveToFirebase();
@@ -2303,6 +2397,10 @@
         knownPlayers: cloudData.knownPlayers,
         eloRatings: cloudData.eloRatings,
         rackets: cloudData.rackets || {},
+        playerRegistry: cloudData.playerRegistry || [],
+        deletedPlayerKeys: cloudData.deletedPlayerKeys || [],
+        eloById: cloudData.eloById || {},
+        racketsById: cloudData.racketsById || {},
         eloRecalculated: !!cloudData.eloRecalculated,
         updatedAt: Date.now()
       };
@@ -2318,10 +2416,14 @@
           knownPlayers: Array.isArray(val.knownPlayers) ? val.knownPlayers : extractNamesFromTournaments(val.tournaments || []),
           eloRatings: (val.eloRatings && typeof val.eloRatings === 'object') ? val.eloRatings : {},
           rackets: (val.rackets && typeof val.rackets === 'object') ? val.rackets : {},
+          playerRegistry: Array.isArray(val.playerRegistry) ? val.playerRegistry : [],
+          deletedPlayerKeys: Array.isArray(val.deletedPlayerKeys) ? val.deletedPlayerKeys : [],
+          eloById: (val.eloById && typeof val.eloById === 'object') ? val.eloById : {},
+          racketsById: (val.racketsById && typeof val.racketsById === 'object') ? val.racketsById : {},
           eloRecalculated: !!val.eloRecalculated
         };
       } else {
-        cloudData = { tournaments: [], knownPlayers: [], eloRatings: {}, rackets: {}, eloRecalculated: false };
+        cloudData = { tournaments: [], knownPlayers: [], eloRatings: {}, rackets: {}, playerRegistry: [], eloById: {}, racketsById: {}, eloRecalculated: false };
       }
 
       // Elo : recalcul ou reset si historique vide
@@ -2343,6 +2445,9 @@
         // Sécurité : convertir d'éventuels restes d'ancienne échelle
         if (migrateEloToNewScale()) needsPush = true;
       }
+
+      if (canonicalizeCloudIdentities()) needsPush = true;
+      if (assignStablePlayerIds()) needsPush = true;
 
       archiveReady = true;
       suppressArchivePush = false;
@@ -2392,6 +2497,465 @@
     /**
      * Parse "Alan & Nicolas" → ["Alan", "Nicolas"]
      */
+
+    // ========== IDENTITÉ JOUEUR (priorité 1 + 2) ==========
+    // Clé unique : trim, espaces internes réduits, casse ignorée.
+    // Nom affiché : première forme connue, sinon la saisie nettoyée.
+    function playerKey(name) {
+      return String(name || '').trim().replace(/\s+/g, ' ').toLocaleLowerCase('fr');
+    }
+
+    function prettyPlayerName(name) {
+      return String(name || '').trim().replace(/\s+/g, ' ');
+    }
+
+    function resolvePlayerName(name) {
+      const pretty = prettyPlayerName(name);
+      const key = playerKey(pretty);
+      if (!key) return '';
+      const rec = findPlayerRecord(pretty);
+      if (rec && rec.name) return prettyPlayerName(rec.name);
+      const known = (cloudData.knownPlayers || []).find(n => playerKey(n) === key);
+      return known ? prettyPlayerName(known) : pretty;
+    }
+
+
+    function makePlayerId() {
+      return 'p-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 8);
+    }
+
+    function getPlayerRegistry() {
+      if (!Array.isArray(cloudData.playerRegistry)) cloudData.playerRegistry = [];
+      return cloudData.playerRegistry;
+    }
+
+    function findPlayerRecord(nameOrId) {
+      const registry = getPlayerRegistry();
+      if (!nameOrId) return null;
+      const byId = registry.find(p => p && p.id === nameOrId);
+      if (byId) return byId;
+      const key = playerKey(nameOrId);
+      if (!key) return null;
+      return registry.find(p => p && (playerKey(p.name) === key || playerKey(p.firstName) === key)) || null;
+    }
+
+    function ensurePlayerId(name) {
+      const pretty = resolvePlayerName(name) || prettyPlayerName(name);
+      const key = playerKey(pretty);
+      if (!key) return '';
+      let rec = findPlayerRecord(pretty);
+      if (!rec) {
+        const parts = pretty.split(' ');
+        rec = { id: makePlayerId(), name: pretty, firstName: parts[0], lastName: parts.slice(1).join(' ') };
+        getPlayerRegistry().push(rec);
+      } else if (!rec.firstName) {
+        const parts = prettyPlayerName(rec.name || pretty).split(' ');
+        rec.firstName = parts[0];
+        rec.lastName = rec.lastName || parts.slice(1).join(' ');
+      }
+      if (pretty && !(cloudData.knownPlayers || []).some(n => playerKey(n) === key)) {
+        cloudData.knownPlayers = mergeUniqueNames(cloudData.knownPlayers, [pretty]);
+      }
+      return rec.id;
+    }
+
+    /**
+     * Donne un id stable à chaque prénom déjà connu, et le pose sur les classements.
+     * ELO et raquette sont recopiés sous cet id (les clés par nom restent en secours).
+     */
+    function assignStablePlayerIds() {
+      if (!cloudData.eloById) cloudData.eloById = {};
+      if (!cloudData.racketsById) cloudData.racketsById = {};
+      let changed = false;
+      const names = new Set(cloudData.knownPlayers || []);
+      Object.keys(cloudData.eloRatings || {}).forEach(n => names.add(n));
+      Object.keys(cloudData.rackets || {}).forEach(n => names.add(n));
+      (cloudData.tournaments || []).forEach(t => {
+        (t.ranking || []).forEach(p => { if (p && p.name) names.add(p.name); });
+      });
+      const deleted = new Set(cloudData.deletedPlayerKeys || []);
+      const before = getPlayerRegistry().length;
+      names.forEach(n => {
+        const key = playerKey(n);
+        if (key && !deleted.has(key)) ensurePlayerId(n);
+      });
+      if (getPlayerRegistry().length !== before) changed = true;
+
+      (cloudData.tournaments || []).forEach(t => {
+        (t.ranking || []).forEach(p => {
+          if (!p || !p.name) return;
+          const id = ensurePlayerId(p.name);
+          if (id && p.playerId !== id) {
+            p.playerId = id;
+            changed = true;
+          }
+          const rec = findPlayerRecord(id);
+          if (rec && p.name !== rec.name) {
+            p.name = rec.name;
+            changed = true;
+          }
+        });
+      });
+
+      getPlayerRegistry().forEach(rec => {
+        if (cloudData.eloById[rec.id] == null) {
+          const raw = cloudData.eloRatings && cloudData.eloRatings[rec.name];
+          if (typeof raw === 'number' && !isNaN(raw)) {
+            cloudData.eloById[rec.id] = raw;
+            changed = true;
+          }
+        }
+        if (!cloudData.racketsById[rec.id] && cloudData.rackets && cloudData.rackets[rec.name]) {
+          cloudData.racketsById[rec.id] = cloudData.rackets[rec.name];
+          changed = true;
+        }
+      });
+      return changed;
+    }
+
+
+    function playerDisplayName(first, last) {
+      return prettyPlayerName([prettyPlayerName(first), prettyPlayerName(last)].filter(Boolean).join(' '));
+    }
+
+    function firstNameTaken(first, exceptId) {
+      const key = playerKey(first);
+      if (!key) return null;
+      return getPlayerRegistry().find(p => p && p.id !== exceptId && playerKey(p.firstName || p.name) === key) || null;
+    }
+
+    function rewritePlayerLabel(oldName, newName) {
+      if (!oldName || !newName || oldName === newName) return;
+      const replaceField = (value) => {
+        if (typeof value !== 'string' || !value) return value;
+        return value.split(/\s*&\s*/).map(part => samePlayer(part, oldName) ? newName : part).join(' & ');
+      };
+      if (Array.isArray(cloudData.knownPlayers)) {
+        cloudData.knownPlayers = mergeUniqueNames(
+          cloudData.knownPlayers.filter(n => !samePlayer(n, oldName)),
+          [newName]
+        );
+      }
+      if (cloudData.eloRatings && cloudData.eloRatings[oldName] != null) {
+        if (cloudData.eloRatings[newName] == null) cloudData.eloRatings[newName] = cloudData.eloRatings[oldName];
+        delete cloudData.eloRatings[oldName];
+      }
+      if (cloudData.rackets && cloudData.rackets[oldName]) {
+        if (!cloudData.rackets[newName]) cloudData.rackets[newName] = cloudData.rackets[oldName];
+        delete cloudData.rackets[oldName];
+      }
+      (cloudData.tournaments || []).forEach(t => {
+        (t.ranking || []).forEach(p => {
+          if (p && samePlayer(p.name, oldName)) p.name = newName;
+        });
+        (t.matchHistory || []).forEach(round => {
+          if (round && typeof round.sit === 'string') round.sit = replaceField(round.sit);
+          (round.matches || []).forEach(m => {
+            if (!m) return;
+            if (m.team1) m.team1 = replaceField(m.team1);
+            if (m.team2) m.team2 = replaceField(m.team2);
+          });
+        });
+      });
+    }
+
+    function createPlayer(first, last) {
+      const firstName = prettyPlayerName(first);
+      const lastName = prettyPlayerName(last);
+      if (!firstName) return { ok: false, error: 'Le prénom est obligatoire.' };
+      const taken = firstNameTaken(firstName);
+      if (taken) return { ok: false, error: `« ${taken.firstName || taken.name} » existe déjà.` };
+      const name = playerDisplayName(firstName, lastName);
+      const key = playerKey(firstName);
+      cloudData.deletedPlayerKeys = (cloudData.deletedPlayerKeys || []).filter(k => k !== key);
+      const rec = { id: makePlayerId(), name, firstName, lastName };
+      getPlayerRegistry().push(rec);
+      cloudData.knownPlayers = mergeUniqueNames(cloudData.knownPlayers, [name]);
+      saveData(cloudData);
+      return { ok: true, player: rec };
+    }
+
+    function updatePlayerIdentity(id, first, last) {
+      const rec = getPlayerRegistry().find(p => p && p.id === id);
+      if (!rec) return { ok: false, error: 'Joueur introuvable.' };
+      const firstName = prettyPlayerName(first);
+      const lastName = prettyPlayerName(last);
+      if (!firstName) return { ok: false, error: 'Le prénom est obligatoire.' };
+      const taken = firstNameTaken(firstName, id);
+      if (taken) return { ok: false, error: `« ${taken.firstName || taken.name} » est déjà utilisé.` };
+      const nextName = playerDisplayName(firstName, lastName);
+      const oldName = rec.name;
+      rec.firstName = firstName;
+      rec.lastName = lastName;
+      rec.name = nextName;
+      rewritePlayerLabel(oldName, nextName);
+      saveData(cloudData);
+      return { ok: true, player: rec };
+    }
+
+    function openPlayersOverlay() {
+      const err = document.getElementById('new-player-error');
+      if (err) err.textContent = '';
+      const overlay = document.getElementById('players-overlay');
+      overlay.classList.remove('hidden');
+      overlay.scrollTop = 0;
+      document.body.style.overflow = 'hidden';
+      renderPlayersList();
+    }
+
+    function closePlayersOverlay() {
+      document.getElementById('players-overlay').classList.add('hidden');
+      document.body.style.overflow = '';
+    }
+
+    function renderPlayersList() {
+      const host = document.getElementById('players-list');
+      if (!host) return;
+      const list = getPlayerRegistry().slice().sort((a, b) => (a.name || '').localeCompare(b.name || '', 'fr'));
+      if (!list.length) {
+        host.innerHTML = '<p style="color:var(--text-muted); text-align:center;">Aucun joueur enregistré.</p>';
+        return;
+      }
+      host.innerHTML = list.map(p => `
+        <div class="past-tournament" id="player-row-${p.id}">
+          <div style="display:flex; justify-content:space-between; gap:8px; align-items:center;">
+            <div style="min-width:0;">
+              <strong>${escapeHtml(p.firstName || p.name || '')}</strong>
+              <span style="color:var(--text-muted);"> ${escapeHtml(p.lastName || '—')}</span>
+            </div>
+            <button type="button" class="btn-secondary" style="width:auto; padding:8px 12px; flex-shrink:0;" onclick="beginEditPlayer('${p.id}')">Modifier</button>
+          </div>
+        </div>`).join('');
+    }
+
+    function submitNewPlayer() {
+      const err = document.getElementById('new-player-error');
+      const first = document.getElementById('new-player-first').value;
+      const last = document.getElementById('new-player-last').value;
+      const res = createPlayer(first, last);
+      if (!res.ok) {
+        if (err) err.textContent = res.error;
+        return;
+      }
+      document.getElementById('new-player-first').value = '';
+      document.getElementById('new-player-last').value = '';
+      if (err) err.textContent = '';
+      renderPlayersList();
+      if (document.getElementById('panel-fip')?.classList.contains('active')) renderFIP();
+    }
+
+    async function beginEditPlayer(id) {
+      const rec = getPlayerRegistry().find(p => p.id === id);
+      if (!rec) return;
+      const ok = await requestAdminPin('Code Réglages pour modifier cette fiche.');
+      if (!ok) return;
+      const row = document.getElementById('player-row-' + id);
+      if (!row) return;
+      row.innerHTML = `
+        <div class="player-fields">
+          <input type="text" id="edit-player-first" value="${escapeHtml(rec.firstName || rec.name || '')}" placeholder="Prénom" autocomplete="off">
+          <input type="text" id="edit-player-last" value="${escapeHtml(rec.lastName || '')}" placeholder="Nom (vide = supprimer)" autocomplete="off">
+        </div>
+        <p id="edit-player-error" class="error-msg"></p>
+        <div class="player-edit-actions">
+          <button type="button" onclick="saveEditPlayer('${id}')">Enregistrer</button>
+          <button type="button" class="btn-secondary" onclick="renderPlayersList()">Annuler</button>
+        </div>
+        <button type="button" class="btn-danger" style="margin-top:8px;" onclick="deletePlayer('${id}')">Supprimer joueur</button>
+        <p style="font-size:0.75rem; color:var(--text-muted); margin-top:6px;">Le prénom reste obligatoire pour enregistrer. Supprimer retire la fiche, pas les tournois déjà joués.</p>`;
+      const last = document.getElementById('edit-player-last');
+      if (last) last.focus();
+    }
+
+
+    function deletePlayer(id) {
+      const rec = getPlayerRegistry().find(p => p && p.id === id);
+      if (!rec) return;
+      const label = rec.name || rec.firstName || 'ce joueur';
+      if (!confirm(`Supprimer ${label} ?\n\nLa fiche disparaît de la liste et des suggestions.\nLes tournois déjà joués restent dans l'historique.`)) return;
+      const key = playerKey(rec.firstName || rec.name);
+      cloudData.playerRegistry = getPlayerRegistry().filter(p => p.id !== id);
+      cloudData.knownPlayers = (cloudData.knownPlayers || []).filter(n => !samePlayer(n, rec.name) && playerKey(n) !== key);
+      if (cloudData.eloRatings) delete cloudData.eloRatings[rec.name];
+      if (cloudData.rackets) delete cloudData.rackets[rec.name];
+      if (cloudData.eloById) delete cloudData.eloById[id];
+      if (cloudData.racketsById) delete cloudData.racketsById[id];
+      if (key) {
+        cloudData.deletedPlayerKeys = [...new Set([...(cloudData.deletedPlayerKeys || []), key])];
+      }
+      saveData(cloudData);
+      renderPlayersList();
+    }
+
+    function saveEditPlayer(id) {
+      const err = document.getElementById('edit-player-error');
+      const first = document.getElementById('edit-player-first')?.value || '';
+      const last = document.getElementById('edit-player-last')?.value || '';
+      const res = updatePlayerIdentity(id, first, last);
+      if (!res.ok) {
+        if (err) err.textContent = res.error;
+        return;
+      }
+      renderPlayersList();
+      renderArchiveForMode(8);
+      renderArchiveForMode(6);
+      renderArchiveForMode(5);
+      renderArchiveForMode(4);
+      renderArchiveForMode(1);
+      if (document.getElementById('panel-fip')?.classList.contains('active')) renderFIP();
+    }
+
+    function samePlayer(a, b) {
+      const ka = playerKey(a);
+      return !!ka && ka === playerKey(b);
+    }
+
+    function pickDisplayName(key, variants, freq) {
+      const counts = (freq && freq[key]) || {};
+      let best = variants[0] || '';
+      let bestScore = -1;
+      variants.forEach(v => {
+        const score = counts[v] || 0;
+        if (score > bestScore || (score === bestScore && v.localeCompare(best, 'fr') < 0)) {
+          bestScore = score;
+          best = v;
+        }
+      });
+      if (bestScore <= 0) {
+        const capped = variants.find(n => n && n[0] !== n[0].toLocaleLowerCase('fr'));
+        if (capped) return capped;
+      }
+      return best;
+    }
+
+    function racketRichness(r) {
+      if (!r || typeof r !== 'object') return 0;
+      let n = 0;
+      Object.keys(r).forEach(k => {
+        if (r[k] != null && r[k] !== '') n += (k === 'photo' ? 3 : 1);
+      });
+      return n;
+    }
+
+    /**
+     * Recolle Cyril / cyril / "Cyril " dans knownPlayers, eloRatings, rackets,
+     * classements et libellés de match. Retourne true si l'archive a changé.
+     */
+    function canonicalizeCloudIdentities() {
+      const freq = {};
+      const groups = {};
+      const add = (raw) => {
+        const pretty = prettyPlayerName(raw);
+        const key = playerKey(pretty);
+        if (!key) return;
+        if (!groups[key]) groups[key] = new Set();
+        groups[key].add(pretty);
+      };
+      const noteRanking = (raw) => {
+        const pretty = prettyPlayerName(raw);
+        const key = playerKey(pretty);
+        if (!key) return;
+        add(pretty);
+        if (!freq[key]) freq[key] = {};
+        freq[key][pretty] = (freq[key][pretty] || 0) + 1;
+      };
+      (cloudData.knownPlayers || []).forEach(add);
+      Object.keys(cloudData.eloRatings || {}).forEach(add);
+      Object.keys(cloudData.rackets || {}).forEach(add);
+      (cloudData.tournaments || []).forEach(t => {
+        (t.ranking || []).forEach(p => { if (p && p.name) noteRanking(p.name); });
+      });
+
+      const displayOf = {};
+      Object.keys(groups).forEach(key => {
+        displayOf[key] = pickDisplayName(key, [...groups[key]], freq);
+      });
+      const canon = (raw) => {
+        const key = playerKey(raw);
+        return key && displayOf[key] ? displayOf[key] : prettyPlayerName(raw);
+      };
+
+      let changed = false;
+      const nextKnown = Object.values(displayOf).sort((a, b) => a.localeCompare(b, 'fr'));
+      const prevKnown = (cloudData.knownPlayers || []).map(prettyPlayerName);
+      if (nextKnown.join('\n') !== prevKnown.join('\n')) changed = true;
+      cloudData.knownPlayers = nextKnown;
+
+      const nextElo = {};
+      const eloGroups = {};
+      Object.keys(cloudData.eloRatings || {}).forEach(raw => {
+        const val = cloudData.eloRatings[raw];
+        if (typeof val !== 'number' || isNaN(val)) return;
+        const key = playerKey(raw);
+        if (!key) return;
+        if (!eloGroups[key]) eloGroups[key] = [];
+        eloGroups[key].push({ raw: prettyPlayerName(raw), val });
+      });
+      Object.keys(eloGroups).forEach(key => {
+        const list = eloGroups[key];
+        const disp = displayOf[key];
+        let chosen = list[0].val;
+        let bestScore = -1;
+        list.forEach(item => {
+          const score = (freq[key] && freq[key][item.raw]) || 0;
+          const away = Math.abs(item.val - 4);
+          const rank = score * 100 + away;
+          if (rank > bestScore) {
+            bestScore = rank;
+            chosen = item.val;
+          }
+        });
+        nextElo[disp] = Math.round(chosen * 10) / 10;
+      });
+      if (JSON.stringify(nextElo) !== JSON.stringify(cloudData.eloRatings || {})) changed = true;
+      cloudData.eloRatings = nextElo;
+
+      const nextRackets = {};
+      const racketGroups = {};
+      Object.keys(cloudData.rackets || {}).forEach(raw => {
+        const key = playerKey(raw);
+        if (!key || !cloudData.rackets[raw]) return;
+        if (!racketGroups[key]) racketGroups[key] = [];
+        racketGroups[key].push(cloudData.rackets[raw]);
+      });
+      Object.keys(racketGroups).forEach(key => {
+        const list = racketGroups[key].slice().sort((a, b) => racketRichness(b) - racketRichness(a));
+        const merged = {};
+        list.forEach(r => {
+          Object.keys(r).forEach(f => {
+            if (merged[f] == null || merged[f] === '') merged[f] = r[f];
+          });
+        });
+        nextRackets[displayOf[key]] = merged;
+      });
+      if (JSON.stringify(nextRackets) !== JSON.stringify(cloudData.rackets || {})) changed = true;
+      cloudData.rackets = nextRackets;
+
+      (cloudData.tournaments || []).forEach(t => {
+        (t.ranking || []).forEach(p => {
+          if (!p || !p.name) return;
+          const next = canon(p.name);
+          if (next && next !== p.name) { p.name = next; changed = true; }
+        });
+        (t.matchHistory || []).forEach(round => {
+          if (round && typeof round.sit === 'string') {
+            const nextSit = round.sit.split(/\s*,\s*/).map(part => canon(part) || part).join(', ');
+            if (nextSit !== round.sit) { round.sit = nextSit; changed = true; }
+          }
+          (round.matches || []).forEach(m => {
+            ['team1', 'team2'].forEach(field => {
+              if (!m || typeof m[field] !== 'string') return;
+              const parts = m[field].split(/\s*&\s*/).map(x => x.trim()).filter(Boolean);
+              if (!parts.length) return;
+              const next = parts.map(part => canon(part) || part).join(' & ');
+              if (next !== m[field]) { m[field] = next; changed = true; }
+            });
+          });
+        });
+      });
+      return changed;
+    }
+
     function parseTeamNames(teamStr) {
       if (!teamStr || typeof teamStr !== 'string') return null;
       const parts = teamStr.split(/\s*&\s*/).map(s => s.trim()).filter(Boolean);
@@ -2555,15 +3119,32 @@
 
     function getStoredElo(name) {
       const data = loadData();
-      const r = data.eloRatings ? data.eloRatings[name] : null;
-      if (typeof r === 'number' && !isNaN(r)) return convertLegacyElo(r);
+      const rec = findPlayerRecord(name);
+      if (rec && data.eloById && typeof data.eloById[rec.id] === 'number' && !isNaN(data.eloById[rec.id])) {
+        return convertLegacyElo(data.eloById[rec.id]);
+      }
+      const ratings = data.eloRatings || {};
+      const direct = ratings[name];
+      if (typeof direct === 'number' && !isNaN(direct)) return convertLegacyElo(direct);
+      const key = playerKey(name);
+      const found = Object.keys(ratings).find(k => playerKey(k) === key);
+      if (found && typeof ratings[found] === 'number' && !isNaN(ratings[found])) return convertLegacyElo(ratings[found]);
       return DEFAULT_ELO;
     }
 
     /** Met à jour le rating en mémoire uniquement. Le push Firebase est fait par saveData / pushArchiveToFirebase. */
     function setStoredElo(name, rating) {
       if (!cloudData.eloRatings) cloudData.eloRatings = {};
-      cloudData.eloRatings[name] = Math.round(clampElo(rating) * 10) / 10;
+      if (!cloudData.eloById) cloudData.eloById = {};
+      const disp = resolvePlayerName(name) || prettyPlayerName(name);
+      const key = playerKey(disp);
+      Object.keys(cloudData.eloRatings).forEach(k => {
+        if (playerKey(k) === key && k !== disp) delete cloudData.eloRatings[k];
+      });
+      const value = Math.round(clampElo(rating) * 10) / 10;
+      cloudData.eloRatings[disp] = value;
+      const id = ensurePlayerId(disp);
+      if (id) cloudData.eloById[id] = value;
     }
 
     // ========== RACKETS (fiche légère liée au prénom) ==========
@@ -2769,8 +3350,12 @@
 
 
     function getRacket(name) {
+      const rec = findPlayerRecord(name);
+      const byId = (loadData().racketsById) || {};
       const all = (loadData().rackets) || {};
-      const r = all[name];
+      const key = playerKey(name);
+      const foundKey = Object.keys(all).find(k => k === name || playerKey(k) === key);
+      const r = (rec && byId[rec.id]) || (foundKey ? all[foundKey] : null);
       if (!r || typeof r !== 'object') return emptyRacket();
       // Compat : ancien champ unique "material" → materialFace
       const legacy = r.material || '';
@@ -2819,10 +3404,19 @@
       });
       if (photo) clean.photo = photo;
       const hasAny = Object.values(clean).some(v => v !== '' && v != null);
+      const disp = resolvePlayerName(name) || prettyPlayerName(name);
+      const key = playerKey(disp);
+      Object.keys(cloudData.rackets).forEach(k => {
+        if (playerKey(k) === key && k !== disp) delete cloudData.rackets[k];
+      });
+      if (!cloudData.racketsById) cloudData.racketsById = {};
+      const id = ensurePlayerId(disp);
       if (hasAny) {
-        cloudData.rackets[name] = clean;
+        cloudData.rackets[disp] = clean;
+        if (id) cloudData.racketsById[id] = clean;
       } else {
-        delete cloudData.rackets[name];
+        delete cloudData.rackets[disp];
+        if (id) delete cloudData.racketsById[id];
       }
       pushArchiveToFirebase();
     }
@@ -3199,8 +3793,14 @@
     }
 
     function mergeUniqueNames(listA, listB) {
-      const set = new Set([...(listA || []), ...(listB || [])].map(n => n.trim()).filter(Boolean));
-      return [...set].sort((a, b) => a.localeCompare(b, 'fr'));
+      const map = new Map();
+      [...(listA || []), ...(listB || [])].forEach(n => {
+        const pretty = prettyPlayerName(n);
+        const key = playerKey(pretty);
+        if (!key || map.has(key)) return;
+        map.set(key, pretty);
+      });
+      return [...map.values()].sort((a, b) => a.localeCompare(b, 'fr'));
     }
 
     function getKnownPlayers() {
@@ -3210,6 +3810,10 @@
     function addKnownPlayers(names) {
       const data = loadData();
       data.knownPlayers = mergeUniqueNames(data.knownPlayers, names);
+      (names || []).forEach(n => { if (playerKey(n)) ensurePlayerId(n); });
+      data.playerRegistry = cloudData.playerRegistry;
+      data.eloById = cloudData.eloById;
+      data.racketsById = cloudData.racketsById;
       saveData(data);
     }
 
@@ -3228,7 +3832,73 @@
       return 0;
     }
 
+
+    function isSessionActive(mode) {
+      const round = document.getElementById(`round-card-${mode}`);
+      const setup = document.getElementById(`setup-card-${mode}`);
+      if (!round || round.classList.contains('hidden')) return false;
+      if (setup && !setup.classList.contains('hidden')) return false;
+      return true;
+    }
+
+    function applyFinishActionsState(mode) {
+      const saveBtn = document.getElementById(`btn-save-${mode}`);
+      const newBtn = document.getElementById(`btn-new-${mode}`);
+      const status = document.getElementById(`finish-status-${mode}`);
+      const saved = !!tournamentSaved;
+      if (saveBtn) {
+        saveBtn.disabled = saved;
+        saveBtn.textContent = saved
+          ? '✓ Sauvegardé'
+          : (mode === 1 ? '💾 Sauvegarder ce match' : '💾 Sauvegarder ce tournoi');
+      }
+      if (newBtn) newBtn.disabled = !saved;
+      if (status) {
+        status.textContent = saved ? 'Sauvegarde faite' : 'Non enregistré';
+        status.className = 'finish-status ' + (saved ? 'saved' : 'pending');
+      }
+    }
+
+    function showFinishActions(mode) {
+      const card = document.getElementById(`finish-actions-${mode}`);
+      if (card) card.classList.remove('hidden');
+      applyFinishActionsState(mode);
+    }
+
+    function hideFinishActions(mode) {
+      const card = document.getElementById(`finish-actions-${mode}`);
+      if (card) card.classList.add('hidden');
+      applyFinishActionsState(mode);
+    }
+
+    function abandonCurrentSession() {
+      const mode = currentMode;
+      tournamentSaved = false;
+      tournamentFinished = false;
+      sessionFinished4 = false;
+      freeMatchFinished = false;
+      freeMatchScoreLocked = false;
+      if (mode === 1) startNewFreeMatch(true);
+      else startNewTournament(mode, true);
+    }
+
+    function startFreshSession(mode) {
+      if (!tournamentSaved) return;
+      if (mode === 1) startNewFreeMatch(true);
+      else startNewTournament(mode, true);
+    }
+
     function switchTab(tab) {
+      if (!isSpectator && String(tab) !== String(currentMode) && isSessionActive(currentMode)) {
+        const finished = !!(tournamentFinished || sessionFinished4 || freeMatchFinished);
+        const msg = finished
+          ? 'La sauvegarde n\'a pas été faite.\n\nQuitter quand même ? La session en cours sera perdue.'
+          : 'Quitter le tournoi / match en cours ?\n\nAnnuler : vous restez.\nOK : l\'onglet change et la session est perdue.';
+        if (!finished || !tournamentSaved) {
+          if (!confirm(msg)) return;
+          abandonCurrentSession();
+        }
+      }
       document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
       document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
       document.querySelector(`.tab-btn[data-tab="${tab}"]`).classList.add('active');
@@ -3417,12 +4087,14 @@
       const stats = {};
       archive.forEach(t => {
         (t.ranking || []).forEach(p => {
-          if (!stats[p.name]) {
-            stats[p.name] = { points: 0, matches: 0 };
+          const key = playerKey(p.name);
+          if (!key) return;
+          if (!stats[key]) {
+            stats[key] = { points: 0, matches: 0 };
           }
-          stats[p.name].points += (p.points || 0);
+          stats[key].points += (p.points || 0);
           const m = (p.played != null) ? p.played : ((p.wins || 0) + (p.ties || 0) + (p.losses || 0));
-          stats[p.name].matches += m;
+          stats[key].matches += m;
         });
       });
       const map = {};
@@ -3441,8 +4113,8 @@
         return (a + b) / 2;
       };
       const addMatch = (i1, i2, j1, j2) => {
-        const e1 = avg(strengthMap[orderedPlayers[i1].name], strengthMap[orderedPlayers[i2].name]);
-        const e2 = avg(strengthMap[orderedPlayers[j1].name], strengthMap[orderedPlayers[j2].name]);
+        const e1 = avg(strengthMap[playerKey(orderedPlayers[i1].name)], strengthMap[playerKey(orderedPlayers[i2].name)]);
+        const e2 = avg(strengthMap[playerKey(orderedPlayers[j1].name)], strengthMap[playerKey(orderedPlayers[j2].name)]);
         if (e1 != null && e2 != null) total += Math.abs(e1 - e2);
       };
       if (mode === 6) {
@@ -3482,7 +4154,7 @@
       const withoutStrength = [];
 
       playerList.forEach(p => {
-        const ppm = strengthMap[p.name];
+        const ppm = strengthMap[playerKey(p.name)];
         if (ppm != null) {
           withStrength.push({ player: p, ppm });
         } else {
@@ -3588,14 +4260,7 @@
         totalRounds6 = getSelectedRotations6();
       }
 
-      // Réactiver le bouton Sauvegarder (grisé après une sauvegarde précédente)
-      const endActStart = document.getElementById(`end-actions-${mode}`);
-      if (endActStart) {
-        endActStart.querySelectorAll('button').forEach(btn => {
-          const onclickAttr = btn.getAttribute('onclick') || '';
-          if (onclickAttr.includes('saveCurrentTournament')) btn.disabled = false;
-        });
-      }
+      hideFinishActions(mode);
 
       // Reset mode 4 state
       pairs4 = null;
@@ -3606,7 +4271,7 @@
       const names = [];
       for (let i = 0; i < count; i++) {
         const el = document.getElementById(`p${mode}-${i}`);
-        const name = (el && el.value.trim()) || `Joueur ${i + 1}`;
+        const name = resolvePlayerName(el && el.value) || `Joueur ${i + 1}`;
         names.push(name);
       }
 
@@ -3644,8 +4309,7 @@
       document.getElementById(`leaderboard-card-${mode}`).classList.remove('hidden');
       document.getElementById(`history-card-${mode}`).classList.remove('hidden');
       document.getElementById(`archive-card-${mode}`).classList.add('hidden');
-      const endAct = document.getElementById(`end-actions-${mode}`);
-      if (endAct) endAct.style.display = 'none';
+      hideFinishActions(mode);
 
       // ===== MODE 4 =====
       if (mode === 4) {
@@ -4027,12 +4691,14 @@
       const stats = {};
       archive.forEach(t => {
         (t.ranking || []).forEach(p => {
-          if (!stats[p.name]) {
-            stats[p.name] = { points: 0, diff: 0, wins: 0 };
+          const key = playerKey(p.name);
+          if (!key) return;
+          if (!stats[key]) {
+            stats[key] = { points: 0, diff: 0, wins: 0 };
           }
-          stats[p.name].points += (p.points || 0);
-          stats[p.name].diff += (p.diff || 0);
-          stats[p.name].wins += (p.wins || 0);
+          stats[key].points += (p.points || 0);
+          stats[key].diff += (p.diff || 0);
+          stats[key].wins += (p.wins || 0);
         });
       });
       return stats;
@@ -4046,8 +4712,8 @@
         if (b.diff !== a.diff) return b.diff - a.diff;
         if (b.wins !== a.wins) return b.wins - a.wins;
 
-        const gA = global[a.name] || { points: 0, diff: 0, wins: 0 };
-        const gB = global[b.name] || { points: 0, diff: 0, wins: 0 };
+        const gA = global[playerKey(a.name)] || { points: 0, diff: 0, wins: 0 };
+        const gB = global[playerKey(b.name)] || { points: 0, diff: 0, wins: 0 };
         if (gB.points !== gA.points) return gB.points - gA.points;
         if (gB.diff !== gA.diff) return gB.diff - gA.diff;
         if (gB.wins !== gA.wins) return gB.wins - gA.wins;
@@ -4210,7 +4876,7 @@
             <div class="nav-buttons" style="margin-top:16px;">
               <button class="btn-orange" onclick="goBackOneRound(5)">↩ Tour précédent</button>
             </div>`;
-          document.getElementById('end-actions-5').style.display = 'flex';
+          showFinishActions(5);
           document.getElementById('archive-card-5').classList.remove('hidden');
         }
       }
@@ -4220,7 +4886,7 @@
 
     function showEndOfRegularRounds() {
       tournamentFinished = false; // pas encore totalement terminé
-      document.getElementById('end-actions-8').style.display = 'none';
+      hideFinishActions(8);
       document.getElementById('archive-card-8').classList.add('hidden');
 
       document.getElementById('round-card-8').innerHTML = `
@@ -4230,9 +4896,8 @@
         </p>
         <div class="nav-buttons" style="flex-direction:column; gap:10px;">
           <button onclick="startPetitesFinales()">Jouer les Petites Finales</button>
-          <button class="btn-secondary" onclick="skipPetitesFinalesAndFinish()">Sauvegarder sans Petites Finales</button>
+          <button class="btn-secondary" onclick="skipPetitesFinalesAndFinish()">Terminer sans Petites Finales</button>
           <button class="btn-orange" onclick="goBackOneRound(8)">↩ Tour précédent</button>
-          <button class="btn-secondary" onclick="startNewTournament(8)">Nouveau tournoi</button>
         </div>
       `;
     }
@@ -4244,7 +4909,7 @@
         <div class="nav-buttons" style="margin-top:16px;">
           <button class="btn-orange" onclick="goBackOneRound(8)">↩ Tour précédent</button>
         </div>`;
-      document.getElementById('end-actions-8').style.display = 'flex';
+      showFinishActions(8);
       document.getElementById('archive-card-8').classList.remove('hidden');
       updateLeaderboard(8);
     }
@@ -4395,7 +5060,7 @@
         <div class="nav-buttons" style="margin-top:16px;">
           <button class="btn-orange" onclick="goBackOneRound(8)">↩ Tour précédent</button>
         </div>`;
-      document.getElementById('end-actions-8').style.display = 'flex';
+      showFinishActions(8);
       document.getElementById('archive-card-8').classList.remove('hidden');
     }
 
@@ -4404,7 +5069,7 @@
 
     function showEndOfRegularRounds6() {
       tournamentFinished = false;
-      document.getElementById('end-actions-6').style.display = 'none';
+      hideFinishActions(6);
       document.getElementById('archive-card-6').classList.add('hidden');
 
       document.getElementById('round-card-6').innerHTML = `
@@ -4414,9 +5079,8 @@
         </p>
         <div class="nav-buttons" style="flex-direction:column; gap:10px;">
           <button onclick="startPetitesFinales6()">Jouer les Petites Finales</button>
-          <button class="btn-secondary" onclick="skipPetitesFinalesAndFinish6()">Sauvegarder sans Petites Finales</button>
+          <button class="btn-secondary" onclick="skipPetitesFinalesAndFinish6()">Terminer sans Petites Finales</button>
           <button class="btn-orange" onclick="goBackOneRound(6)">↩ Tour précédent</button>
-          <button class="btn-secondary" onclick="startNewTournament(6)">Nouveau tournoi</button>
         </div>
       `;
     }
@@ -4429,7 +5093,7 @@
         <div class="nav-buttons" style="margin-top:16px;">
           <button class="btn-orange" onclick="goBackOneRound(6)">↩ Tour précédent</button>
         </div>`;
-      document.getElementById('end-actions-6').style.display = 'flex';
+      showFinishActions(6);
       document.getElementById('archive-card-6').classList.remove('hidden');
       updateLeaderboard(6);
     }
@@ -4579,7 +5243,7 @@
         <div class="nav-buttons" style="margin-top:16px;">
           <button class="btn-orange" onclick="goBackOneRound(6)">↩ Tour précédent</button>
         </div>`;
-      document.getElementById('end-actions-6').style.display = 'flex';
+      showFinishActions(6);
       document.getElementById('archive-card-6').classList.remove('hidden');
       updateLeaderboard(6);
       if (!isSpectator && currentLiveId) pushLiveState();
@@ -4684,14 +5348,14 @@
         document.getElementById('c1-t2-score-8').value = s.c1t2;
         document.getElementById('c2-t1-score-8').value = s.c2t1;
         document.getElementById('c2-t2-score-8').value = s.c2t2;
-        document.getElementById('end-actions-8').style.display = 'none';
+        hideFinishActions(8);
         document.getElementById('archive-card-8').classList.add('hidden');
       } else if (ud.type === 'petites6') {
         renderPetitesFinalesMatch6();
         const s = ud.scores;
         document.getElementById('c1-t1-score-6').value = s.c1t1;
         document.getElementById('c1-t2-score-6').value = s.c1t2;
-        document.getElementById('end-actions-6').style.display = 'none';
+        hideFinishActions(6);
         document.getElementById('archive-card-6').classList.add('hidden');
       } else {
         const roundIdx = ud.roundIdx;
@@ -4721,7 +5385,7 @@
           document.getElementById('c1-t2-score-5').value = s.c1t2;
         }
 
-        document.getElementById(`end-actions-${mode}`).style.display = 'none';
+        hideFinishActions(mode);
         document.getElementById(`archive-card-${mode}`).classList.add('hidden');
       }
 
@@ -4956,20 +5620,7 @@
         btn1.style.setProperty('opacity', '0.85', 'important');
         btn1.textContent = labelOk;
       }
-      const endAct = document.getElementById(`end-actions-${mode}`);
-      if (endAct) {
-        endAct.querySelectorAll('button').forEach(btn => {
-          const oc = btn.getAttribute('onclick') || '';
-          if (oc.includes('saveCurrentTournament')) {
-            btn.disabled = true;
-            btn.setAttribute('disabled', 'disabled');
-            btn.style.setProperty('background', '#94a3b8', 'important');
-            btn.style.setProperty('cursor', 'not-allowed', 'important');
-            btn.style.setProperty('opacity', '0.85', 'important');
-            btn.textContent = labelOk;
-          }
-        });
-      }
+      applyFinishActionsState(mode);
     }
 
     function saveCurrentTournament(mode) {
@@ -5005,6 +5656,7 @@
           ranking: sorted.map((p, i) => ({
             rank: ranks[i],
             name: p.name,
+            playerId: ensurePlayerId(p.name),
             points: p.points,
             wins: p.wins,
             ties: p.ties,
@@ -5050,26 +5702,14 @@
         graySaveButton(mode);
         alert(mode === 1 ? 'Match sauvegardé avec succès !' : 'Tournoi sauvegardé avec succès !');
         // Après l'alert (focus revient), forcer encore une fois
-        setTimeout(() => graySaveButton(mode), 0);
-        setTimeout(() => graySaveButton(mode), 100);
+        applyFinishActionsState(mode);
+        setTimeout(() => applyFinishActionsState(mode), 0);
+        setTimeout(() => applyFinishActionsState(mode), 100);
       } catch (err) {
         console.error('saveCurrentTournament error', err);
         tournamentSaved = false;
         // Réactiver le bouton en cas d'erreur
-        const endAct = document.getElementById(`end-actions-${mode}`);
-        if (endAct) {
-          endAct.querySelectorAll('button').forEach(btn => {
-            const oc = btn.getAttribute('onclick') || '';
-            if (oc.includes('saveCurrentTournament')) {
-              btn.disabled = false;
-              btn.removeAttribute('disabled');
-              btn.style.background = '';
-              btn.style.cursor = '';
-              btn.style.opacity = '';
-              btn.textContent = mode === 1 ? '💾 Sauvegarder ce match' : '💾 Sauvegarder ce tournoi';
-            }
-          });
-        }
+        applyFinishActionsState(mode);
         alert('Erreur lors de la sauvegarde : ' + (err && err.message ? err.message : err));
       }
     }
@@ -5088,15 +5728,7 @@
           }
         });
       }
-      const endActions = document.getElementById(`end-actions-${mode}`);
-      if (endActions) {
-        endActions.querySelectorAll('button').forEach(btn => {
-          const onclickAttr = btn.getAttribute('onclick') || '';
-          if (onclickAttr.includes('saveCurrentTournament')) {
-            btn.disabled = true;
-          }
-        });
-      }
+      applyFinishActionsState(mode);
     }
 
     /** Affiche une date de tournoi propre : "Tournoi • DD/MM/YY • HH:MM" */
@@ -5199,8 +5831,8 @@
             const s2 = Number(m.score2);
             if (isNaN(s1) || isNaN(s2)) return;
 
-            const sorted1 = team1.slice().sort((a, b) => a.localeCompare(b, 'fr'));
-            const sorted2 = team2.slice().sort((a, b) => a.localeCompare(b, 'fr'));
+            const sorted1 = team1.map(resolvePlayerName).sort((a, b) => a.localeCompare(b, 'fr'));
+            const sorted2 = team2.map(resolvePlayerName).sort((a, b) => a.localeCompare(b, 'fr'));
             const key1 = sorted1.join(' & ');
             const key2 = sorted2.join(' & ');
 
@@ -5325,14 +5957,16 @@
       const stats = {};
       archiveList.forEach(t => {
         (t.ranking || []).forEach(p => {
-          if (!stats[p.name]) {
-            stats[p.name] = {
-              name: p.name, tournaments: 0, matches: 0, points: 0,
+          const key = playerKey(p.name);
+          if (!key) return;
+          if (!stats[key]) {
+            stats[key] = {
+              name: resolvePlayerName(p.name), tournaments: 0, matches: 0, points: 0,
               wins: 0, ties: 0, losses: 0, diff: 0,
               firsts: 0, seconds: 0, thirds: 0
             };
           }
-          const s = stats[p.name];
+          const s = stats[key];
           s.tournaments++;
           s.points += (p.points || 0);
           s.wins += (p.wins || 0);
@@ -5598,7 +6232,7 @@
       const archive = loadArchive();
       // archive est stockée du plus récent au plus ancien (unshift) → on inverse pour l'ordre chronologique
       const chronological = [...archive].reverse();
-      const playerTournaments = chronological.filter(t => (t.ranking || []).some(p => p.name === name));
+      const playerTournaments = chronological.filter(t => (t.ranking || []).some(p => samePlayer(p.name, name)));
 
       if (playerTournaments.length === 0) return;
 
@@ -5608,7 +6242,7 @@
       const eloSeries = [];
 
       playerTournaments.forEach((t, idx) => {
-        const p = (t.ranking || []).find(pp => pp.name === name);
+        const p = (t.ranking || []).find(pp => samePlayer(pp.name, name));
         if (!p) return;
         tournaments++;
         const m = (p.played != null) ? p.played : ((p.wins || 0) + (p.ties || 0) + (p.losses || 0));
@@ -5637,7 +6271,7 @@
       }));
 
       const fullRanking = computeFipRanking(archive);
-      const rankIndex = fullRanking.findIndex(p => p.name === name);
+      const rankIndex = fullRanking.findIndex(p => samePlayer(p.name, name));
       const currentRank = rankIndex >= 0 ? rankIndex + 1 : null;
 
       document.getElementById('stats-player-name').textContent = name;
@@ -6335,13 +6969,13 @@
       const tournamentPlayerNames = ranking.map(p => p.name).filter(Boolean);
 
       const buildPlayerCardData = (name) => {
-        const playerTournaments = chronoCumul.filter(tt => (tt.ranking || []).some(pp => pp.name === name));
+        const playerTournaments = chronoCumul.filter(tt => (tt.ranking || []).some(pp => samePlayer(pp.name, name)));
         let tournaments = 0, matches = 0, wins = 0;
         let firsts = 0, seconds = 0, thirds = 0;
         const series = [];
         const eloSeries = [];
         playerTournaments.forEach((tt, idx) => {
-          const p = (tt.ranking || []).find(pp => pp.name === name);
+          const p = (tt.ranking || []).find(pp => samePlayer(pp.name, name));
           if (!p) return;
           tournaments++;
           const m = (p.played != null) ? p.played : ((p.wins || 0) + (p.ties || 0) + (p.losses || 0));
@@ -6359,9 +6993,9 @@
         const winPct = matches > 0 ? (wins / matches) * 100 : 0;
         const currentElo = getStoredElo(name);
         // Elo à la fin de ce tournoi si dispo dans ranking du tournoi exporté
-        const inT = (t.ranking || []).find(pp => pp.name === name);
+        const inT = (t.ranking || []).find(pp => samePlayer(pp.name, name));
         const eloAtT = (inT && typeof inT.elo === 'number') ? convertLegacyElo(inT.elo) : currentElo;
-        const cumulRank = cumulPlayers.find(p => p.name === name);
+        const cumulRank = cumulPlayers.find(p => samePlayer(p.name, name));
         return {
           name,
           tournaments,
@@ -6774,7 +7408,10 @@
         tournaments: data.tournaments,
         knownPlayers: data.knownPlayers,
         eloRatings: data.eloRatings,
-        rackets: data.rackets || {}
+        rackets: data.rackets || {},
+        playerRegistry: data.playerRegistry || [],
+        eloById: data.eloById || {},
+        racketsById: data.racketsById || {}
       }, null, 2)], { type: 'text/plain' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -6859,22 +7496,14 @@
       event.target.value = '';
     }
 
-    function startNewTournament(mode) {
-      if (!confirm('Commencer un nouveau tournoi ? Les scores du tournoi en cours seront perdus s\'ils ne sont pas sauvegardés.')) return;
+    function startNewTournament(mode, force) {
+      if (!force && !tournamentSaved) return;
       document.getElementById(`setup-card-${mode}`).classList.remove('hidden');
       document.getElementById(`round-card-${mode}`).classList.add('hidden');
       document.getElementById(`leaderboard-card-${mode}`).classList.add('hidden');
       document.getElementById(`history-card-${mode}`).classList.add('hidden');
       document.getElementById(`archive-card-${mode}`).classList.remove('hidden');
-      const endAct = document.getElementById(`end-actions-${mode}`);
-      if (endAct) {
-        endAct.style.display = 'none';
-        // Réactiver Sauvegarder pour le prochain tournoi
-        endAct.querySelectorAll('button').forEach(btn => {
-          const onclickAttr = btn.getAttribute('onclick') || '';
-          if (onclickAttr.includes('saveCurrentTournament')) btn.disabled = false;
-        });
-      }
+      hideFinishActions(mode);
       players = [];
       matchHistory = [];
       tournamentFinished = false;
@@ -7330,7 +7959,7 @@
         const names = [];
         for (let i = 0; i < 4; i++) {
           const el = document.getElementById(`p1-${i}`);
-          const name = (el && el.value.trim()) || `Joueur ${i + 1}`;
+          const name = resolvePlayerName(el && el.value) || `Joueur ${i + 1}`;
           names.push(name);
         }
         const uniqueNames = new Set(names.map(n => n.toLowerCase()));
@@ -7387,16 +8016,7 @@
         document.getElementById('archive-card-1')?.classList.remove('hidden');
 
         // Masquer / réactiver les actions de fin jusqu'à l'enregistrement
-        const endAct = document.getElementById('end-actions-1');
-        if (endAct) {
-          endAct.style.display = 'none';
-          endAct.querySelectorAll('button').forEach(btn => {
-            btn.disabled = false;
-            if ((btn.getAttribute('onclick') || '').includes('saveCurrentTournament')) {
-              btn.textContent = '💾 Sauvegarder ce match';
-            }
-          });
-        }
+        hideFinishActions(1);
 
         renderCourt1();
         updateLeaderboard(1);
@@ -7556,30 +8176,8 @@
           Classement ci-dessous · Pensez à sauvegarder pour le ranking Padel Up
         </p>`;
 
-      const endAct = document.getElementById('end-actions-1');
-      if (endAct) {
-        endAct.style.display = 'flex';
-        endAct.querySelectorAll('button').forEach(btn => {
-          const onclickAttr = btn.getAttribute('onclick') || '';
-          if (onclickAttr.includes('saveCurrentTournament')) {
-            btn.disabled = false;
-            btn.removeAttribute('disabled');
-            btn.style.background = '';
-            btn.style.cursor = '';
-            btn.style.opacity = '';
-            btn.textContent = '💾 Sauvegarder ce match';
-          }
-        });
-        const btn1 = document.getElementById('btn-save-1');
-        if (btn1) {
-          btn1.disabled = false;
-          btn1.removeAttribute('disabled');
-          btn1.style.background = '';
-          btn1.style.cursor = '';
-          btn1.style.opacity = '';
-          btn1.textContent = '💾 Sauvegarder ce match';
-        }
-      }
+      tournamentSaved = false;
+      showFinishActions(1);
 
       updateLeaderboard(1);
       updateHistory(1);
@@ -7608,10 +8206,8 @@
       freeMatchScoreLocked = false;
     }
 
-    function startNewFreeMatch() {
-      if (matchHistory.length > 0 && !tournamentSaved) {
-        if (!confirm('Nouveau match libre ? Les scores non sauvegardés de la session seront perdus.')) return;
-      }
+    function startNewFreeMatch(force) {
+      if (!force && !tournamentSaved && matchHistory.length > 0) return;
       players = [];
       matchHistory = [];
       pairs1 = null;
@@ -7635,19 +8231,7 @@
       document.getElementById('history-card-1')?.classList.add('hidden');
       document.getElementById('archive-card-1')?.classList.remove('hidden');
 
-      const endAct = document.getElementById('end-actions-1');
-      if (endAct) {
-        endAct.style.display = 'none';
-        endAct.querySelectorAll('button').forEach(btn => {
-          btn.disabled = false;
-          btn.style.background = '';
-          btn.style.cursor = '';
-          const oc = btn.getAttribute('onclick') || '';
-          if (oc.includes('saveCurrentTournament')) {
-            btn.textContent = '💾 Sauvegarder ce match';
-          }
-        });
-      }
+      hideFinishActions(1);
 
       buildPlayerInputs(1);
       setPointsToggle(1, 16);
@@ -7681,14 +8265,8 @@
         <p style="text-align:center; color:var(--text-muted); margin-top:8px;">
           Classement ci-dessous · Pensez à sauvegarder pour le ranking Padel Up
         </p>`;
-      const endAct = document.getElementById('end-actions-1');
-      if (endAct) {
-        endAct.style.display = 'flex';
-        endAct.querySelectorAll('button').forEach(btn => {
-          const onclickAttr = btn.getAttribute('onclick') || '';
-          if (onclickAttr.includes('saveCurrentTournament')) btn.disabled = false;
-        });
-      }
+      tournamentSaved = false;
+      showFinishActions(1);
       updateLeaderboard(1);
       if (typeof pushLiveState === 'function') pushLiveState();
     }
@@ -7957,15 +8535,8 @@
           Sets : ${setsScore4[0]} – ${setsScore4[1]} · Classement final ci-dessous
         </p>`;
 
-      const endAct = document.getElementById('end-actions-4');
-      if (endAct) {
-        endAct.style.display = 'flex';
-        // Réactiver "Sauvegarder" (peut avoir été grisé après une sauvegarde précédente)
-        endAct.querySelectorAll('button').forEach(btn => {
-          const onclickAttr = btn.getAttribute('onclick') || '';
-          if (onclickAttr.includes('saveCurrentTournament')) btn.disabled = false;
-        });
-      }
+      tournamentSaved = false;
+      showFinishActions(4);
       document.getElementById('archive-card-4')?.classList.remove('hidden');
       updateLeaderboard(4);
       pushLiveState();

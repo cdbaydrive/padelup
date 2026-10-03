@@ -2106,12 +2106,17 @@
     let freeMatchScoreLocked = false; // true après Enregistrer, jusqu'à revanche / nouveau match
 
     // ========== ARCHIVE CLOUD (Firebase Realtime Database) ==========
-    // Source de vérité unique : nœud /archive  (ou /archive_test en mode test)
-    // Shape : { tournaments: [], knownPlayers: [], eloRatings: {}, updatedAt }
+    // /archive (ou /archive_test)
+    //   schemaVersion: 2
+    //   meta: { knownPlayers, eloRatings, rackets, playerRegistry, eloById, racketsById, ... }
+    //   tournaments/{id}: un enfant par tournoi (plus de .set() du blob entier)
+    // L'ancien blob (tournaments: []) est migré une fois au démarrage.
     let cloudData = { tournaments: [], knownPlayers: [], eloRatings: {}, rackets: {} };
     let archiveReady = false;
     let archiveListener = null;
+    let archiveSyncToken = 0;
     let suppressArchivePush = false; // true pendant l'application d'un snapshot distant
+    let lastSyncedTournamentJson = new Map(); // clé Firebase → JSON déjà écrit / reçu
 
     // ===== Mode Test (chemin /archive_test) =====
     // Toujours démarrer en production (le mode test se active uniquement via Réglages)
@@ -2324,10 +2329,9 @@
 
       // Débrancher l'ancien listener puis rebrancher sur le nouveau chemin
       if (firebaseDb) {
-        try {
-          firebaseDb.ref(previousPath).off('value');
-        } catch (e) { /* ignore */ }
+        detachArchiveListeners(previousPath);
         archiveListener = null;
+        archiveSyncToken++;
       }
       archiveReady = false;
       cloudData = { tournaments: [], knownPlayers: [], eloRatings: {}, rackets: {} };
@@ -2387,25 +2391,14 @@
         racketsById: (data.racketsById && typeof data.racketsById === 'object') ? data.racketsById : (cloudData.racketsById || {}),
         eloRecalculated: data.eloRecalculated != null ? !!data.eloRecalculated : !!cloudData.eloRecalculated
       };
-      pushArchiveToFirebase();
+      // Un seul envoi meta (ELO déjà appliqué par l'appelant) + enfants tournoi modifiés seulement.
+      pushMetaToFirebase();
+      syncTournamentDiff();
     }
 
     function pushArchiveToFirebase() {
-      if (!firebaseDb || isSpectator || suppressArchivePush) return;
-      const payload = {
-        tournaments: cloudData.tournaments,
-        knownPlayers: cloudData.knownPlayers,
-        eloRatings: cloudData.eloRatings,
-        rackets: cloudData.rackets || {},
-        playerRegistry: cloudData.playerRegistry || [],
-        deletedPlayerKeys: cloudData.deletedPlayerKeys || [],
-        eloById: cloudData.eloById || {},
-        racketsById: cloudData.racketsById || {},
-        eloRecalculated: !!cloudData.eloRecalculated,
-        updatedAt: Date.now()
-      };
-      const ref = getArchiveRef();
-      if (ref) ref.set(payload).catch(err => console.warn('Archive push error', err));
+      // Compat : ne réécrit plus le blob. Meta seule ; les tournois passent par syncTournamentDiff.
+      pushMetaToFirebase();
     }
 
     function applyArchiveSnapshot(val) {
@@ -3049,19 +3042,311 @@
       return true;
     }
 
+    function stripUndefined(obj) {
+      if (Array.isArray(obj)) return obj.map(stripUndefined);
+      if (obj && typeof obj === 'object') {
+        const out = {};
+        Object.keys(obj).forEach(k => {
+          if (obj[k] !== undefined) out[k] = stripUndefined(obj[k]);
+        });
+        return out;
+      }
+      return obj;
+    }
+
+    function tournamentFirebaseKey(t) {
+      const raw = (t && t.id != null && t.id !== '') ? String(t.id) : ('t-' + Date.now().toString(36));
+      return raw.replace(/[.#$\[\]\/]/g, '_');
+    }
+
+    function sortTournamentsDesc(list) {
+      return (list || []).slice().sort((a, b) => {
+        const da = Number(a && a.id) || 0;
+        const db = Number(b && b.id) || 0;
+        if (db !== da) return db - da;
+        return String((b && b.id) || '').localeCompare(String((a && a.id) || ''));
+      });
+    }
+
+    function rememberSyncedTournaments(list) {
+      lastSyncedTournamentJson = new Map();
+      (list || []).forEach(t => {
+        if (!t) return;
+        lastSyncedTournamentJson.set(tournamentFirebaseKey(t), JSON.stringify(t));
+      });
+    }
+
+    function buildMetaPayload() {
+      return {
+        knownPlayers: cloudData.knownPlayers || [],
+        eloRatings: cloudData.eloRatings || {},
+        rackets: cloudData.rackets || {},
+        playerRegistry: cloudData.playerRegistry || [],
+        deletedPlayerKeys: cloudData.deletedPlayerKeys || [],
+        eloById: cloudData.eloById || {},
+        racketsById: cloudData.racketsById || {},
+        eloRecalculated: !!cloudData.eloRecalculated,
+        updatedAt: Date.now()
+      };
+    }
+
+    function pushMetaToFirebase() {
+      if (!firebaseDb || isSpectator || suppressArchivePush) return Promise.resolve();
+      const ref = getArchiveRef();
+      if (!ref) return Promise.resolve();
+      return ref.update({
+        schemaVersion: 2,
+        meta: buildMetaPayload()
+      }).catch(err => console.warn('Meta push error', err));
+    }
+
+    function syncTournamentDiff() {
+      if (!firebaseDb || isSpectator || suppressArchivePush) return Promise.resolve();
+      const ref = getArchiveRef();
+      if (!ref) return Promise.resolve();
+      const next = cloudData.tournaments || [];
+      const updates = {};
+      const nextKeys = new Set();
+      next.forEach(t => {
+        if (!t) return;
+        const key = tournamentFirebaseKey(t);
+        nextKeys.add(key);
+        const js = JSON.stringify(t);
+        if (lastSyncedTournamentJson.get(key) !== js) updates[key] = stripUndefined(t);
+      });
+      lastSyncedTournamentJson.forEach((_, key) => {
+        if (!nextKeys.has(key)) updates[key] = null;
+      });
+      if (!Object.keys(updates).length) return Promise.resolve();
+      rememberSyncedTournaments(next);
+      return ref.child('tournaments').update(updates).catch(err => console.warn('Tournament sync error', err));
+    }
+
+    function detachArchiveListeners(path) {
+      if (!firebaseDb || !path) return;
+      const ref = firebaseDb.ref(path);
+      try { ref.off(); } catch (e) { /* ignore */ }
+      try { ref.child('meta').off(); } catch (e) { /* ignore */ }
+      try { ref.child('tournaments').off(); } catch (e) { /* ignore */ }
+    }
+
+    function metaFromLegacyRoot(val) {
+      const src = (val && val.meta && typeof val.meta === 'object') ? val.meta : (val || {});
+      return {
+        knownPlayers: Array.isArray(src.knownPlayers) ? src.knownPlayers : [],
+        eloRatings: (src.eloRatings && typeof src.eloRatings === 'object') ? src.eloRatings : {},
+        rackets: (src.rackets && typeof src.rackets === 'object') ? src.rackets : {},
+        playerRegistry: Array.isArray(src.playerRegistry) ? src.playerRegistry : [],
+        deletedPlayerKeys: Array.isArray(src.deletedPlayerKeys) ? src.deletedPlayerKeys : [],
+        eloById: (src.eloById && typeof src.eloById === 'object') ? src.eloById : {},
+        racketsById: (src.racketsById && typeof src.racketsById === 'object') ? src.racketsById : {},
+        eloRecalculated: !!src.eloRecalculated,
+        updatedAt: Date.now()
+      };
+    }
+
+    function migrateLegacyArchiveIfNeeded(ref, val) {
+      if (!val || typeof val !== 'object') return Promise.resolve();
+      if (val.schemaVersion === 2 && val.meta && !Array.isArray(val.tournaments)) return Promise.resolve();
+      const legacyList = Array.isArray(val.tournaments) ? val.tournaments : null;
+      const hasRootMeta = !!(val.knownPlayers || val.eloRatings || val.rackets || val.playerRegistry || val.eloById);
+      if (!legacyList && !hasRootMeta && val.meta) {
+        return ref.update({ schemaVersion: 2 });
+      }
+      if (!legacyList && !hasRootMeta && !val.meta) return Promise.resolve();
+      const updates = {
+        schemaVersion: 2,
+        meta: metaFromLegacyRoot(val),
+        knownPlayers: null,
+        eloRatings: null,
+        rackets: null,
+        playerRegistry: null,
+        deletedPlayerKeys: null,
+        eloById: null,
+        racketsById: null,
+        eloRecalculated: null,
+        updatedAt: null
+      };
+      if (legacyList) {
+        const newKeys = new Set();
+        legacyList.forEach(t => {
+          if (!t || typeof t !== 'object') return;
+          const key = tournamentFirebaseKey(t);
+          newKeys.add(key);
+          updates['tournaments/' + key] = stripUndefined(t);
+        });
+        legacyList.forEach((_, i) => {
+          if (!newKeys.has(String(i))) updates['tournaments/' + i] = null;
+        });
+      }
+      console.log('[archive] migration blob → enfants', legacyList ? legacyList.length : 0, 'tournoi(s)');
+      return ref.update(updates);
+    }
+
+    function applyMetaSnapshot(meta) {
+      const src = (meta && typeof meta === 'object') ? meta : {};
+      cloudData.knownPlayers = Array.isArray(src.knownPlayers) ? src.knownPlayers : (cloudData.knownPlayers || []);
+      cloudData.eloRatings = (src.eloRatings && typeof src.eloRatings === 'object') ? src.eloRatings : {};
+      cloudData.rackets = (src.rackets && typeof src.rackets === 'object') ? src.rackets : {};
+      cloudData.playerRegistry = Array.isArray(src.playerRegistry) ? src.playerRegistry : [];
+      cloudData.deletedPlayerKeys = Array.isArray(src.deletedPlayerKeys) ? src.deletedPlayerKeys : [];
+      cloudData.eloById = (src.eloById && typeof src.eloById === 'object') ? src.eloById : {};
+      cloudData.racketsById = (src.racketsById && typeof src.racketsById === 'object') ? src.racketsById : {};
+      cloudData.eloRecalculated = !!src.eloRecalculated;
+    }
+
+    function upsertLocalTournament(t) {
+      if (!t || typeof t !== 'object') return;
+      if (!Array.isArray(cloudData.tournaments)) cloudData.tournaments = [];
+      const key = tournamentFirebaseKey(t);
+      const idx = cloudData.tournaments.findIndex(x => x && tournamentFirebaseKey(x) === key);
+      if (idx >= 0) cloudData.tournaments[idx] = t;
+      else cloudData.tournaments.push(t);
+      cloudData.tournaments = sortTournamentsDesc(cloudData.tournaments);
+      lastSyncedTournamentJson.set(key, JSON.stringify(t));
+    }
+
+    function removeLocalTournamentByKey(key) {
+      cloudData.tournaments = (cloudData.tournaments || []).filter(t => tournamentFirebaseKey(t) !== key);
+      lastSyncedTournamentJson.delete(key);
+    }
+
+    function refreshArchiveViews() {
+      try {
+        renderArchiveForMode(8);
+        renderArchiveForMode(6);
+        renderArchiveForMode(5);
+        renderArchiveForMode(4);
+        renderArchiveForMode(1);
+        if (document.getElementById('panel-fip') && document.getElementById('panel-fip').classList.contains('active')) {
+          renderFIP();
+        }
+      } catch (e) { /* DOM pas encore prêt au tout premier snapshot */ }
+    }
+
+    function postHydrateArchive() {
+      const before = JSON.stringify(cloudData.tournaments || []);
+      let needsPush = false;
+      if (!(cloudData.tournaments || []).length) {
+        if (cloudData.eloRatings && Object.keys(cloudData.eloRatings).length > 0) {
+          cloudData.eloRatings = {};
+          needsPush = true;
+        }
+        cloudData.eloRecalculated = true;
+      } else if (!cloudData.eloRecalculated) {
+        const ok = recalculateAllEloFromHistory();
+        if (ok) {
+          cloudData.eloRecalculated = true;
+          needsPush = true;
+        }
+      } else if (migrateEloToNewScale()) {
+        needsPush = true;
+      }
+      if (canonicalizeCloudIdentities()) needsPush = true;
+      if (assignStablePlayerIds()) needsPush = true;
+      archiveReady = true;
+      suppressArchivePush = false;
+      if (needsPush) {
+        pushMetaToFirebase();
+        if (JSON.stringify(cloudData.tournaments || []) !== before) syncTournamentDiff();
+      }
+      rememberSyncedTournaments(cloudData.tournaments);
+      refreshArchiveViews();
+    }
+
+    function attachArchiveListeners(ref, token) {
+      suppressArchivePush = true;
+      cloudData.tournaments = [];
+      lastSyncedTournamentJson = new Map();
+      let metaReady = false;
+      let toursReady = false;
+      const seenDuringInitial = new Set();
+      function maybeReady() {
+        if (!metaReady || !toursReady || token !== archiveSyncToken) return;
+        postHydrateArchive();
+      }
+      ref.child('meta').on('value', snap => {
+        if (token !== archiveSyncToken) return;
+        suppressArchivePush = true;
+        applyMetaSnapshot(snap.val());
+        if (!metaReady) {
+          metaReady = true;
+          maybeReady();
+        } else if (archiveReady) {
+          suppressArchivePush = false;
+          refreshArchiveViews();
+        }
+      }, err => console.error('Meta listener error', err));
+      ref.child('tournaments').on('child_added', snap => {
+        if (token !== archiveSyncToken) return;
+        const t = snap.val();
+        if (!t || typeof t !== 'object') return;
+        if (t.id == null) t.id = snap.key;
+        suppressArchivePush = true;
+        upsertLocalTournament(t);
+        seenDuringInitial.add(snap.key);
+        if (archiveReady) {
+          suppressArchivePush = false;
+          refreshArchiveViews();
+        }
+      });
+      ref.child('tournaments').on('child_changed', snap => {
+        if (token !== archiveSyncToken) return;
+        const t = snap.val();
+        if (!t || typeof t !== 'object') return;
+        if (t.id == null) t.id = snap.key;
+        suppressArchivePush = true;
+        upsertLocalTournament(t);
+        if (archiveReady) {
+          suppressArchivePush = false;
+          refreshArchiveViews();
+        }
+      });
+      ref.child('tournaments').on('child_removed', snap => {
+        if (token !== archiveSyncToken) return;
+        suppressArchivePush = true;
+        removeLocalTournamentByKey(snap.key);
+        if (archiveReady) {
+          suppressArchivePush = false;
+          refreshArchiveViews();
+        }
+      });
+      ref.child('tournaments').once('value').then(snap => {
+        if (token !== archiveSyncToken) return;
+        snap.forEach(child => {
+          const t = child.val();
+          if (!t || typeof t !== 'object') return;
+          if (t.id == null) t.id = child.key;
+          if (!seenDuringInitial.has(child.key)) upsertLocalTournament(t);
+        });
+        toursReady = true;
+        maybeReady();
+      }).catch(err => {
+        console.error('Tournaments load error', err);
+        toursReady = true;
+        maybeReady();
+      });
+    }
+
     function startArchiveSync() {
       if (!initFirebase()) {
         console.warn('Firebase indisponible — archive cloud non démarrée');
-        archiveReady = true; // éviter de bloquer l'UI
+        archiveReady = true;
         return;
       }
-      if (archiveListener) return; // déjà branché
+      if (archiveListener) return;
       const ref = getArchiveRef();
       if (!ref) return;
-      archiveListener = ref.on('value', snap => {
-        applyArchiveSnapshot(snap.val());
-      }, err => {
-        console.error('Archive listener error', err);
+      const token = ++archiveSyncToken;
+      archiveListener = token;
+      ref.once('value').then(snap => {
+        if (token !== archiveSyncToken) return;
+        return migrateLegacyArchiveIfNeeded(ref, snap.val());
+      }).then(() => {
+        if (token !== archiveSyncToken) return;
+        attachArchiveListeners(ref, token);
+      }).catch(err => {
+        console.error('Archive sync error', err);
         archiveReady = true;
       });
     }
@@ -5686,11 +5971,11 @@
         };
         const cleanTournament = stripUndefined(tournament);
 
+        // ELO d'abord, puis un seul saveArchive (meta + enfant tournoi). Plus de second .set().
+        players.forEach(p => setStoredElo(p.name, p.elo));
         const archive = loadArchive();
         archive.unshift(cleanTournament);
         saveArchive(archive);
-        players.forEach(p => setStoredElo(p.name, p.elo));
-        pushArchiveToFirebase();
         tournamentSaved = true;
         lockTournamentActions(mode);
         graySaveButton(mode); // re-appliquer après lock / éventuel re-render
@@ -7882,24 +8167,47 @@
           });
           eloRatings = convertedElo;
 
-          // Écrasement complet (migration unique)
+          // Écriture structurée (enfants tournoi + meta), pas un .set() du blob
           status.textContent = 'Écriture dans Firebase…';
-          const payload = {
-            tournaments,
-            knownPlayers,
-            eloRatings,
-            rackets,
-            updatedAt: Date.now()
-          };
           const ref = getArchiveRef();
           if (!ref) {
             status.textContent = 'Firebase indisponible.';
             status.style.color = '#dc2626';
             return;
           }
-          status.textContent = 'Écriture dans Firebase (/' + getArchivePath() + ')…';
-          ref.set(payload).then(() => {
+          const tourMap = {};
+          tournaments.forEach(t => {
+            if (!t) return;
+            tourMap[tournamentFirebaseKey(t)] = stripUndefined(t);
+          });
+          const payload = {
+            schemaVersion: 2,
+            meta: {
+              knownPlayers,
+              eloRatings,
+              rackets,
+              playerRegistry: [],
+              deletedPlayerKeys: [],
+              eloById: {},
+              racketsById: {},
+              eloRecalculated: true,
+              updatedAt: Date.now()
+            },
+            tournaments: tourMap,
+            knownPlayers: null,
+            eloRatings: null,
+            rackets: null,
+            playerRegistry: null,
+            deletedPlayerKeys: null,
+            eloById: null,
+            racketsById: null,
+            eloRecalculated: null,
+            updatedAt: null
+          };
+          status.textContent = 'Écriture dans Firebase (/' + getArchivePath() + '/tournaments)…';
+          ref.update(payload).then(() => {
             cloudData = { tournaments, knownPlayers, eloRatings, rackets };
+            rememberSyncedTournaments(tournaments);
             archiveReady = true;
             renderArchiveForMode(8);
             renderArchiveForMode(6);

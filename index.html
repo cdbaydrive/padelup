@@ -2108,7 +2108,7 @@
     // ========== ARCHIVE CLOUD (Firebase Realtime Database) ==========
     // /archive (ou /archive_test)
     //   schemaVersion: 2
-    //   meta: { knownPlayers, eloRatings, rackets, playerRegistry, eloById, racketsById, ... }
+    //   meta: fiches sans photo  ·  racketPhotos/{playerId}: image, non écoutée par le tournoi
     //   tournaments/{id}: un enfant par tournoi (plus de .set() du blob entier)
     // L'ancien blob (tournaments: []) est migré une fois au démarrage.
     let cloudData = { tournaments: [], knownPlayers: [], eloRatings: {}, rackets: {} };
@@ -2334,7 +2334,7 @@
         archiveSyncToken++;
       }
       archiveReady = false;
-      cloudData = { tournaments: [], knownPlayers: [], eloRatings: {}, rackets: {} };
+      cloudData = { tournaments: [], knownPlayers: [], eloRatings: {}, rackets: {}, racketPhotos: {}, _racketPhotosLoaded: false };
       startArchiveSync();
 
       // Rafraîchir les vues (tous les modes)
@@ -2441,6 +2441,7 @@
 
       if (canonicalizeCloudIdentities()) needsPush = true;
       if (assignStablePlayerIds()) needsPush = true;
+      extractEmbeddedRacketPhotos();
 
       archiveReady = true;
       suppressArchivePush = false;
@@ -3080,14 +3081,74 @@
       return {
         knownPlayers: cloudData.knownPlayers || [],
         eloRatings: cloudData.eloRatings || {},
-        rackets: cloudData.rackets || {},
+        rackets: stripPhotosFromRacketMap(cloudData.rackets),
         playerRegistry: cloudData.playerRegistry || [],
         deletedPlayerKeys: cloudData.deletedPlayerKeys || [],
         eloById: cloudData.eloById || {},
-        racketsById: cloudData.racketsById || {},
+        racketsById: stripPhotosFromRacketMap(cloudData.racketsById),
         eloRecalculated: !!cloudData.eloRecalculated,
         updatedAt: Date.now()
       };
+    }
+
+    function isRacketPhoto(value) {
+      return typeof value === 'string' && value.indexOf('data:image') === 0;
+    }
+
+    function stripPhotosFromRacketMap(map) {
+      const out = {};
+      Object.keys(map || {}).forEach(k => {
+        const r = map[k];
+        if (!r || typeof r !== 'object') return;
+        const copy = Object.assign({}, r);
+        delete copy.photo;
+        out[k] = copy;
+      });
+      return out;
+    }
+
+    function pushRacketPhoto(playerId, photo) {
+      if (!firebaseDb || isSpectator || !playerId) return Promise.resolve();
+      const ref = getArchiveRef();
+      if (!ref) return Promise.resolve();
+      const node = ref.child('racketPhotos').child(playerId);
+      if (photo) return node.set(photo).catch(err => console.warn('Photo push error', err));
+      return node.remove().catch(err => console.warn('Photo remove error', err));
+    }
+
+    function ensureRacketPhotosLoaded() {
+      if (!firebaseDb || isSpectator) return Promise.resolve();
+      if (cloudData._racketPhotosLoaded) return Promise.resolve();
+      const ref = getArchiveRef();
+      if (!ref) return Promise.resolve();
+      return ref.child('racketPhotos').once('value').then(snap => {
+        cloudData.racketPhotos = (snap.val() && typeof snap.val() === 'object') ? snap.val() : {};
+        cloudData._racketPhotosLoaded = true;
+      }).catch(err => console.warn('Photos load error', err));
+    }
+
+    function extractEmbeddedRacketPhotos() {
+      if (!cloudData.racketPhotos) cloudData.racketPhotos = {};
+      let changed = false;
+      const pull = (map, nameKey) => {
+        Object.keys(map || {}).forEach(k => {
+          const r = map[k];
+          if (!r || !isRacketPhoto(r.photo)) return;
+          const id = nameKey ? ensurePlayerId(k) : k;
+          if (id) cloudData.racketPhotos[id] = r.photo;
+          delete r.photo;
+          changed = true;
+        });
+      };
+      pull(cloudData.rackets, true);
+      pull(cloudData.racketsById, false);
+      if (!changed) return;
+      pushMetaToFirebase();
+      const ref = getArchiveRef();
+      if (ref && !isSpectator) {
+        ref.child('racketPhotos').update(cloudData.racketPhotos).catch(err => console.warn('Photo migrate error', err));
+      }
+      cloudData._racketPhotosLoaded = true;
     }
 
     function pushMetaToFirebase() {
@@ -3655,7 +3716,11 @@
         materialCore: r.materialCore || '',
         materialFace: r.materialFace || legacy || '',
         type: r.type || '',
-        photo: (typeof r.photo === 'string' && r.photo.indexOf('data:image') === 0) ? r.photo : '',
+        photo: (function () {
+          const fromNode = (rec && cloudData.racketPhotos && cloudData.racketPhotos[rec.id]) || '';
+          if (isRacketPhoto(fromNode)) return fromNode;
+          return isRacketPhoto(r.photo) ? r.photo : '';
+        })(),
         scorePower: parseRacketScore(r.scorePower),
         scoreControl: parseRacketScore(r.scoreControl),
         scoreComfort: parseRacketScore(r.scoreComfort),
@@ -3687,14 +3752,14 @@
         const v = parseRacketScore(racket[key]);
         if (v !== '') clean[key] = v;
       });
-      if (photo) clean.photo = photo;
-      const hasAny = Object.values(clean).some(v => v !== '' && v != null);
+      const hasAny = Object.values(clean).some(v => v !== '' && v != null) || !!photo;
       const disp = resolvePlayerName(name) || prettyPlayerName(name);
       const key = playerKey(disp);
       Object.keys(cloudData.rackets).forEach(k => {
         if (playerKey(k) === key && k !== disp) delete cloudData.rackets[k];
       });
       if (!cloudData.racketsById) cloudData.racketsById = {};
+      if (!cloudData.racketPhotos) cloudData.racketPhotos = {};
       const id = ensurePlayerId(disp);
       if (hasAny) {
         cloudData.rackets[disp] = clean;
@@ -3703,7 +3768,12 @@
         delete cloudData.rackets[disp];
         if (id) delete cloudData.racketsById[id];
       }
-      pushArchiveToFirebase();
+      if (id) {
+        if (photo) cloudData.racketPhotos[id] = photo;
+        else delete cloudData.racketPhotos[id];
+      }
+      pushMetaToFirebase();
+      if (id) pushRacketPhoto(id, photo);
     }
 
     /**
@@ -6486,6 +6556,11 @@
 
       // Comparatif raquettes : ordre du classement officiel (pas du tri UI)
       renderRacketsComparison(combined);
+      ensureRacketPhotosLoaded().then(() => {
+        if (document.getElementById('panel-fip')?.classList.contains('active')) {
+          renderRacketsComparison(combined);
+        }
+      });
 
       container.onclick = function(e) {
         const thEl = e.target.closest('th.sortable');
@@ -6587,6 +6662,9 @@
       document.getElementById('stats-elo-chart-wrap').innerHTML = renderEloChart(eloSeriesConverted);
       const racketBlock = document.getElementById('stats-racket-block');
       if (racketBlock) racketBlock.innerHTML = renderRacketForm(name);
+      ensureRacketPhotosLoaded().then(() => {
+        if (currentStatsPlayerName === name && racketBlock) racketBlock.innerHTML = renderRacketForm(name);
+      });
       const overlay = document.getElementById('player-stats-overlay');
       overlay.classList.remove('hidden');
       overlay.scrollTop = 0; // toujours commencer en haut du contenu
@@ -7693,10 +7771,11 @@
         tournaments: data.tournaments,
         knownPlayers: data.knownPlayers,
         eloRatings: data.eloRatings,
-        rackets: data.rackets || {},
+        rackets: stripPhotosFromRacketMap(data.rackets),
         playerRegistry: data.playerRegistry || [],
         eloById: data.eloById || {},
-        racketsById: data.racketsById || {}
+        racketsById: stripPhotosFromRacketMap(data.racketsById),
+        racketPhotos: data.racketPhotos || {}
       }, null, 2)], { type: 'text/plain' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -7757,7 +7836,14 @@
             mergeUniqueNames(importedPlayers, extractNamesFromTournaments(mergedTournaments))
           );
           const mergedElo = { ...(current.eloRatings || {}), ...convertedImportedElo };
-          const mergedRackets = { ...(current.rackets || {}), ...importedRackets };
+          const mergedRackets = stripPhotosFromRacketMap({ ...(current.rackets || {}), ...importedRackets });
+          const importedPhotos = (imported.racketPhotos && typeof imported.racketPhotos === 'object') ? imported.racketPhotos : {};
+          Object.keys(importedRackets || {}).forEach(k => {
+            const r = importedRackets[k];
+            if (!r || !isRacketPhoto(r.photo)) return;
+            const id = ensurePlayerId(k);
+            if (id) importedPhotos[id] = r.photo;
+          });
 
           saveData({
             tournaments: mergedTournaments,
@@ -7765,6 +7851,12 @@
             eloRatings: mergedElo,
             rackets: mergedRackets
           });
+          cloudData.racketPhotos = { ...(cloudData.racketPhotos || {}), ...importedPhotos };
+          cloudData._racketPhotosLoaded = true;
+          const photoRef = getArchiveRef();
+          if (photoRef && Object.keys(importedPhotos).length) {
+            photoRef.child('racketPhotos').update(importedPhotos).catch(err => console.warn('Import photos', err));
+          }
 
           renderArchiveForMode(8);
           renderArchiveForMode(6);

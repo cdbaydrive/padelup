@@ -629,6 +629,47 @@
       color: var(--court-bg);
       text-decoration: underline;
     }
+    #footer-auth-status,
+    #settings-auth-status {
+      color: var(--text-muted);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      font-size: 0.85rem;
+      font-weight: 500;
+    }
+    #footer-auth-status.auth-on,
+    #settings-auth-status.auth-on {
+      display: inline-block;
+      font-family: "SF Mono", ui-monospace, Menlo, Consolas, monospace;
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      color: #047857;
+      background: #ecfdf5;
+      border: 1px solid #86efac;
+      border-radius: 999px;
+      padding: 3px 10px;
+      line-height: 1.4;
+      vertical-align: middle;
+    }
+    #settings-auth-status {
+      margin-bottom: 10px;
+      padding-right: 28px;
+    }
+    #settings-auth-status.auth-on {
+      margin-bottom: 10px;
+    }
+    #settings-auth-block input[type="email"],
+    #settings-auth-block input[type="password"] {
+      width: 100%;
+      box-sizing: border-box;
+      margin-bottom: 8px;
+      padding: 10px 12px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font-size: 1rem;
+      background: #f8fafc;
+    }
 
     /* Tableaux : une seule ligne par cellule, scroll horizontal si besoin */
     .fip-table-wrap table th,
@@ -1183,6 +1224,7 @@
   <!-- Firebase SDK (compat) -->
   <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
   <!-- jsPDF + AutoTable (export PDF tournoi) -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
@@ -1836,6 +1878,8 @@
 
   <!-- Lien Réglages en bas de page (scroll avec le contenu) -->
   <div id="footer-settings">
+    <span id="footer-auth-status">Non connecté</span>
+    <span style="color:#cbd5e1;"> · </span>
     <a href="#" onclick="event.preventDefault(); openPlayersOverlay();">Joueurs</a>
     <span style="color:#cbd5e1;"> · </span>
     <a href="#" onclick="event.preventDefault(); openSettingsOverlay();">Réglages</a>
@@ -1846,7 +1890,7 @@
       <button class="live-close" onclick="closePlayersOverlay()" aria-label="Fermer">×</button>
       <h3>Joueurs</h3>
       <p style="color:var(--text-muted); font-size:0.85rem; margin-bottom:12px;">
-        Créer un membre est ouvert à tous. Modifier un prénom ou ajouter un nom demande le code Réglages. L’identifiant ne change pas.
+        Créer une fiche est ouvert à un compte marqueur. Renommer ou supprimer une fiche : organisateur + code Réglages. L’identifiant ne change pas.
       </p>
       <div class="player-fields">
         <input type="text" id="new-player-first" placeholder="Prénom" autocomplete="off">
@@ -1905,6 +1949,21 @@
     <div class="live-modal">
       <button class="live-close" onclick="closeSettingsOverlay()" aria-label="Fermer">×</button>
 
+      <div id="settings-auth-block">
+        <p id="settings-auth-status">Non connecté</p>
+        <div id="settings-login-form">
+          <input type="email" id="auth-email" placeholder="Email" autocomplete="username" inputmode="email">
+          <input type="password" id="auth-password" placeholder="Mot de passe" autocomplete="current-password"
+            onkeydown="if(event.key==='Enter')submitAuthLogin()">
+          <button type="button" onclick="submitAuthLogin()">Se connecter</button>
+          <p id="auth-login-error" class="error-msg" style="min-height:1.2em;"></p>
+          <p style="font-size:0.78rem; color:var(--text-muted); margin-top:4px;">
+            Une fois par appareil. La session reste ouverte (persistence locale).
+          </p>
+        </div>
+        <button type="button" id="settings-logout-btn" class="btn-secondary hidden" onclick="submitAuthLogout()">Se déconnecter</button>
+      </div>
+
       <!-- Écran PIN -->
       <div id="settings-pin-screen">
         <h3>⚙ Réglages</h3>
@@ -1927,7 +1986,7 @@
         </p>
         <div class="settings-actions">
           <button type="button" class="btn-secondary" onclick="exportArchive(); closeSettingsOverlay();">Exporter (.txt)</button>
-          <button type="button" class="btn-secondary" onclick="document.getElementById('import-file').click()">Importer (.json / .txt)</button>
+          <button type="button" id="btn-import-archive" class="btn-secondary" onclick="document.getElementById('import-file').click()">Importer (.json / .txt)</button>
         </div>
 
         <div style="margin-top:20px; padding:14px; background:#fff7ed; border:1px solid #fdba74; border-radius:10px;">
@@ -1961,7 +2020,7 @@
             Visites du mois en cours (timestamp, visitorId, platform).
             Purge auto des mois précédents à l’ouverture de Réglages.
           </p>
-          <button type="button" class="btn-secondary" onclick="openAccessLogsOverlay()" style="width:100%;">
+          <button type="button" id="btn-open-logs" class="btn-secondary" onclick="openAccessLogsOverlay()" style="width:100%;">
             Voir le journal d’accès
           </button>
         </div>
@@ -2173,6 +2232,8 @@
       if (!initFirebase() || !firebaseDb) return;
       // Ne pas logger en mode spectateur pour éviter de polluer avec les lives
       if (typeof isSpectator !== 'undefined' && isSpectator) return;
+      // Append-only réservé à un utilisateur connecté (règles RTDB)
+      if (!currentAuthUser) return;
 
       const monthKey = getCurrentMonthKey();
       const payload = {
@@ -2192,7 +2253,7 @@
      * À l’ouverture de Réglages : supprime les nœuds des mois précédents.
      */
     function cleanupOldAccessLogs() {
-      if (!firebaseDb) return;
+      if (!firebaseDb || !isOrganizer()) return;
       const root = getAccessLogsRootPath();
       const current = getCurrentMonthKey();
       firebaseDb.ref(root).once('value').then(snap => {
@@ -2211,6 +2272,7 @@
     }
 
     function openAccessLogsOverlay() {
+      if (!requireOrganizer('Seul un organisateur peut lire le journal.')) return;
       cleanupOldAccessLogs();
       const ov = document.getElementById('access-logs-overlay');
       if (ov) {
@@ -2308,6 +2370,7 @@
     }
 
     function clearCurrentMonthAccessLogs() {
+      if (!requireOrganizer('Seul un organisateur peut effacer le journal.')) return;
       if (!confirm('Effacer tous les logs d’accès du mois en cours ?\n\nCette action est irréversible.')) return;
       if (!firebaseDb) return;
       const monthKey = getCurrentMonthKey();
@@ -2380,6 +2443,14 @@
     }
 
     function saveData(data) {
+      if (isSpectator) return;
+      if (!isMarqueur()) {
+        console.warn('saveData refusé : marqueur ou organisateur requis');
+        return;
+      }
+      const keptPhotos = cloudData.racketPhotos || {};
+      const keptLoaded = !!cloudData._racketPhotosLoaded;
+      const keptPersisted = cloudData._photosPersisted || {};
       cloudData = {
         tournaments: Array.isArray(data.tournaments) ? data.tournaments : [],
         knownPlayers: Array.isArray(data.knownPlayers) ? data.knownPlayers : [],
@@ -2389,7 +2460,10 @@
         deletedPlayerKeys: Array.isArray(data.deletedPlayerKeys) ? data.deletedPlayerKeys : (cloudData.deletedPlayerKeys || []),
         eloById: (data.eloById && typeof data.eloById === 'object') ? data.eloById : (cloudData.eloById || {}),
         racketsById: (data.racketsById && typeof data.racketsById === 'object') ? data.racketsById : (cloudData.racketsById || {}),
-        eloRecalculated: data.eloRecalculated != null ? !!data.eloRecalculated : !!cloudData.eloRecalculated
+        eloRecalculated: data.eloRecalculated != null ? !!data.eloRecalculated : !!cloudData.eloRecalculated,
+        racketPhotos: (data.racketPhotos && typeof data.racketPhotos === 'object') ? data.racketPhotos : keptPhotos,
+        _racketPhotosLoaded: data._racketPhotosLoaded != null ? !!data._racketPhotosLoaded : keptLoaded,
+        _photosPersisted: keptPersisted
       };
       // Un seul envoi meta (ELO déjà appliqué par l'appelant) + enfants tournoi modifiés seulement.
       pushMetaToFirebase();
@@ -2654,6 +2728,7 @@
     }
 
     function createPlayer(first, last) {
+      if (!requireMarqueur('Connecte-toi pour enregistrer une fiche joueur.')) return { ok: false, error: 'Connecte-toi pour enregistrer.' };
       const firstName = prettyPlayerName(first);
       const lastName = prettyPlayerName(last);
       if (!firstName) return { ok: false, error: 'Le prénom est obligatoire.' };
@@ -2670,6 +2745,7 @@
     }
 
     function updatePlayerIdentity(id, first, last) {
+      if (!requireOrganizer('Seul un organisateur peut renommer une fiche.')) return { ok: false, error: 'Organisateur requis.' };
       const rec = getPlayerRegistry().find(p => p && p.id === id);
       if (!rec) return { ok: false, error: 'Joueur introuvable.' };
       const firstName = prettyPlayerName(first);
@@ -2741,6 +2817,7 @@
     async function beginEditPlayer(id) {
       const rec = getPlayerRegistry().find(p => p.id === id);
       if (!rec) return;
+      if (!requireOrganizer('Seul un organisateur peut modifier une fiche.')) return;
       const ok = await requestAdminPin('Code Réglages pour modifier cette fiche.');
       if (!ok) return;
       const row = document.getElementById('player-row-' + id);
@@ -2763,6 +2840,7 @@
 
 
     function deletePlayer(id) {
+      if (!requireOrganizer('Seul un organisateur peut supprimer une fiche.')) return;
       const rec = getPlayerRegistry().find(p => p && p.id === id);
       if (!rec) return;
       const label = rec.name || rec.firstName || 'ce joueur';
@@ -3095,64 +3173,116 @@
       return typeof value === 'string' && value.indexOf('data:image') === 0;
     }
 
+    function rememberPhotoPersisted(playerId, ok) {
+      if (!cloudData._photosPersisted) cloudData._photosPersisted = {};
+      if (!playerId) return;
+      if (ok) cloudData._photosPersisted[playerId] = true;
+      else delete cloudData._photosPersisted[playerId];
+    }
+
     function stripPhotosFromRacketMap(map) {
       const out = {};
+      const persisted = cloudData._photosPersisted || {};
       Object.keys(map || {}).forEach(k => {
         const r = map[k];
         if (!r || typeof r !== 'object') return;
         const copy = Object.assign({}, r);
-        delete copy.photo;
+        // Ne retire la photo de la fiche que si le nœud dédié a bien accusé réception.
+        // Sinon la prochaine écriture meta l'efface définitivement.
+        const id = (getPlayerRegistry().find(rec => rec && (rec.id === k || playerKey(rec.name) === playerKey(k))) || {}).id || k;
+        if (!(isRacketPhoto(copy.photo) && !persisted[id] && !persisted[k])) delete copy.photo;
         out[k] = copy;
       });
       return out;
     }
 
     function pushRacketPhoto(playerId, photo) {
-      if (!firebaseDb || isSpectator || !playerId) return Promise.resolve();
+      if (!firebaseDb || isSpectator || !playerId) return Promise.resolve(false);
+      if (!isMarqueur()) return Promise.resolve(false);
       const ref = getArchiveRef();
-      if (!ref) return Promise.resolve();
-      const node = ref.child('racketPhotos').child(playerId);
-      if (photo) return node.set(photo).catch(err => console.warn('Photo push error', err));
-      return node.remove().catch(err => console.warn('Photo remove error', err));
+      if (!ref) return Promise.resolve(false);
+      const payload = photo || null;
+      const writeNode = (node) => payload ? node.set(payload) : node.remove();
+      const primary = ref.child('racketPhotos').child(playerId);
+      const fallback = ref.child('meta').child('racketPhotos').child(playerId);
+      return writeNode(primary).then(() => {
+        rememberPhotoPersisted(playerId, !!payload);
+        return true;
+      }).catch(err => {
+        console.warn('Photo push error, repli meta/racketPhotos', err);
+        return writeNode(fallback).then(() => {
+          rememberPhotoPersisted(playerId, !!payload);
+          return true;
+        }).catch(err2 => {
+          console.warn('Photo fallback error', err2);
+          rememberPhotoPersisted(playerId, false);
+          return false;
+        });
+      });
+    }
+
+    function mergePhotoSnap(snap, into) {
+      const v = snap && snap.val ? snap.val() : null;
+      if (!v || typeof v !== 'object') return;
+      Object.keys(v).forEach(k => {
+        if (isRacketPhoto(v[k])) into[k] = v[k];
+      });
     }
 
     function ensureRacketPhotosLoaded() {
-      if (!firebaseDb || isSpectator) return Promise.resolve();
-      if (cloudData._racketPhotosLoaded) return Promise.resolve();
+      if (!firebaseDb) return Promise.resolve();
+      if (cloudData._racketPhotosLoaded && cloudData.racketPhotos) return Promise.resolve();
       const ref = getArchiveRef();
       if (!ref) return Promise.resolve();
-      return ref.child('racketPhotos').once('value').then(snap => {
-        cloudData.racketPhotos = (snap.val() && typeof snap.val() === 'object') ? snap.val() : {};
+      return Promise.all([
+        ref.child('racketPhotos').once('value'),
+        ref.child('meta').child('racketPhotos').once('value')
+      ]).then(snaps => {
+        const merged = Object.assign({}, cloudData.racketPhotos || {});
+        snaps.forEach(snap => mergePhotoSnap(snap, merged));
+        cloudData.racketPhotos = merged;
         cloudData._racketPhotosLoaded = true;
-      }).catch(err => console.warn('Photos load error', err));
+      }).catch(err => {
+        console.warn('Photos load error', err);
+        cloudData._racketPhotosLoaded = false;
+      });
     }
 
     function extractEmbeddedRacketPhotos() {
       if (!cloudData.racketPhotos) cloudData.racketPhotos = {};
-      let changed = false;
+      const pending = {};
       const pull = (map, nameKey) => {
         Object.keys(map || {}).forEach(k => {
           const r = map[k];
           if (!r || !isRacketPhoto(r.photo)) return;
           const id = nameKey ? ensurePlayerId(k) : k;
-          if (id) cloudData.racketPhotos[id] = r.photo;
-          delete r.photo;
-          changed = true;
+          if (!id) return;
+          pending[id] = r.photo;
+          cloudData.racketPhotos[id] = r.photo;
         });
       };
       pull(cloudData.rackets, true);
       pull(cloudData.racketsById, false);
-      if (!changed) return;
-      pushMetaToFirebase();
-      const ref = getArchiveRef();
-      if (ref && !isSpectator) {
-        ref.child('racketPhotos').update(cloudData.racketPhotos).catch(err => console.warn('Photo migrate error', err));
-      }
-      cloudData._racketPhotosLoaded = true;
+      const ids = Object.keys(pending);
+      if (!ids.length) return Promise.resolve();
+      if (!firebaseDb || isSpectator || !isMarqueur()) return Promise.resolve();
+      return Promise.all(ids.map(id => pushRacketPhoto(id, pending[id]))).then(results => {
+        const ok = results.every(Boolean);
+        if (!ok) return;
+        const strip = (map) => {
+          Object.keys(map || {}).forEach(k => {
+            if (map[k] && map[k].photo) delete map[k].photo;
+          });
+        };
+        strip(cloudData.rackets);
+        strip(cloudData.racketsById);
+        return pushMetaToFirebase();
+      });
     }
 
     function pushMetaToFirebase() {
       if (!firebaseDb || isSpectator || suppressArchivePush) return Promise.resolve();
+      if (!isMarqueur()) return Promise.resolve();
       const ref = getArchiveRef();
       if (!ref) return Promise.resolve();
       return ref.update({
@@ -3163,23 +3293,36 @@
 
     function syncTournamentDiff() {
       if (!firebaseDb || isSpectator || suppressArchivePush) return Promise.resolve();
+      if (!isMarqueur()) return Promise.resolve();
       const ref = getArchiveRef();
       if (!ref) return Promise.resolve();
       const next = cloudData.tournaments || [];
       const updates = {};
       const nextKeys = new Set();
+      const uid = currentAuthUser && currentAuthUser.uid;
       next.forEach(t => {
         if (!t) return;
+        if (isOrganizer() && !t.createdBy && uid) {
+          t.createdBy = uid;
+          if (!t.createdByName) t.createdByName = (currentAuthUser.email || 'historique');
+        }
         const key = tournamentFirebaseKey(t);
         nextKeys.add(key);
         const js = JSON.stringify(t);
-        if (lastSyncedTournamentJson.get(key) !== js) updates[key] = stripUndefined(t);
+        if (lastSyncedTournamentJson.get(key) !== js) {
+          if (isOrganizer() || (uid && t.createdBy === uid)) updates[key] = stripUndefined(t);
+        }
       });
-      lastSyncedTournamentJson.forEach((_, key) => {
-        if (!nextKeys.has(key)) updates[key] = null;
-      });
+      if (isOrganizer()) {
+        lastSyncedTournamentJson.forEach((_, key) => {
+          if (!nextKeys.has(key)) updates[key] = null;
+        });
+      }
       if (!Object.keys(updates).length) return Promise.resolve();
-      rememberSyncedTournaments(next);
+      Object.keys(updates).forEach(key => {
+        if (updates[key] == null) lastSyncedTournamentJson.delete(key);
+        else lastSyncedTournamentJson.set(key, JSON.stringify(updates[key]));
+      });
       return ref.child('tournaments').update(updates).catch(err => console.warn('Tournament sync error', err));
     }
 
@@ -3207,6 +3350,8 @@
     }
 
     function migrateLegacyArchiveIfNeeded(ref, val) {
+      // Réécriture du blob : organisateur seulement (les règles refusent un set racine anonyme).
+      if (!isOrganizer()) return Promise.resolve();
       if (!val || typeof val !== 'object') return Promise.resolve();
       if (val.schemaVersion === 2 && val.meta && !Array.isArray(val.tournaments)) return Promise.resolve();
       const legacyList = Array.isArray(val.tournaments) ? val.tournaments : null;
@@ -3232,6 +3377,10 @@
         const newKeys = new Set();
         legacyList.forEach(t => {
           if (!t || typeof t !== 'object') return;
+          if (!t.createdBy && currentAuthUser) {
+            t.createdBy = currentAuthUser.uid;
+            t.createdByName = t.createdByName || currentAuthUser.email || 'historique';
+          }
           const key = tournamentFirebaseKey(t);
           newKeys.add(key);
           updates['tournaments/' + key] = stripUndefined(t);
@@ -3307,6 +3456,7 @@
       if (assignStablePlayerIds()) needsPush = true;
       archiveReady = true;
       suppressArchivePush = false;
+      extractEmbeddedRacketPhotos();
       if (needsPush) {
         pushMetaToFirebase();
         if (JSON.stringify(cloudData.tournaments || []) !== before) syncTournamentDiff();
@@ -3695,15 +3845,31 @@
     let _pendingRacketPhoto = '';
 
 
+    function lookupRacketPhoto(name, rec, racket) {
+      const photos = cloudData.racketPhotos || {};
+      const candidates = [];
+      if (rec && rec.id) candidates.push(photos[rec.id]);
+      if (name) candidates.push(photos[name], photos[playerKey(name)]);
+      Object.keys(photos).forEach(k => {
+        if (rec && k === rec.id) candidates.push(photos[k]);
+        else if (name && (k === name || playerKey(k) === playerKey(name))) candidates.push(photos[k]);
+      });
+      if (racket) candidates.push(racket.photo);
+      const byId = (cloudData.racketsById) || {};
+      if (rec && byId[rec.id]) candidates.push(byId[rec.id].photo);
+      const all = cloudData.rackets || {};
+      const foundKey = Object.keys(all).find(k => k === name || playerKey(k) === playerKey(name));
+      if (foundKey && all[foundKey]) candidates.push(all[foundKey].photo);
+      return candidates.find(isRacketPhoto) || '';
+    }
+
     function getRacket(name) {
       const rec = findPlayerRecord(name);
       const byId = (loadData().racketsById) || {};
       const all = (loadData().rackets) || {};
       const key = playerKey(name);
       const foundKey = Object.keys(all).find(k => k === name || playerKey(k) === key);
-      const r = (rec && byId[rec.id]) || (foundKey ? all[foundKey] : null);
-      if (!r || typeof r !== 'object') return emptyRacket();
-      // Compat : ancien champ unique "material" → materialFace
+      const r = (rec && byId[rec.id]) || (foundKey ? all[foundKey] : null) || {};
       const legacy = r.material || '';
       return {
         brand: r.brand || '',
@@ -3716,11 +3882,7 @@
         materialCore: r.materialCore || '',
         materialFace: r.materialFace || legacy || '',
         type: r.type || '',
-        photo: (function () {
-          const fromNode = (rec && cloudData.racketPhotos && cloudData.racketPhotos[rec.id]) || '';
-          if (isRacketPhoto(fromNode)) return fromNode;
-          return isRacketPhoto(r.photo) ? r.photo : '';
-        })(),
+        photo: lookupRacketPhoto(name, rec, r),
         scorePower: parseRacketScore(r.scorePower),
         scoreControl: parseRacketScore(r.scoreControl),
         scoreComfort: parseRacketScore(r.scoreComfort),
@@ -3771,9 +3933,23 @@
       if (id) {
         if (photo) cloudData.racketPhotos[id] = photo;
         else delete cloudData.racketPhotos[id];
+      } else if (photo) {
+        cloudData.racketPhotos[disp] = photo;
       }
-      pushMetaToFirebase();
-      if (id) pushRacketPhoto(id, photo);
+      if (!id) {
+        if (photo && cloudData.rackets[disp]) cloudData.rackets[disp].photo = photo;
+        pushMetaToFirebase();
+        return Promise.resolve(false);
+      }
+      return pushRacketPhoto(id, photo).then(ok => {
+        if (!ok && photo) {
+          const withPhoto = Object.assign({}, clean, { photo: photo });
+          if (cloudData.rackets[disp]) cloudData.rackets[disp] = withPhoto;
+          if (cloudData.racketsById[id]) cloudData.racketsById[id] = withPhoto;
+        }
+        pushMetaToFirebase();
+        return ok;
+      });
     }
 
     /**
@@ -3918,7 +4094,7 @@
         .join('');
       const showCustom = r.brand === 'Autre';
       const photoHtml = _pendingRacketPhoto
-        ? `<img src="${_pendingRacketPhoto}" alt="Raquette">`
+        ? `<img src="${escapeHtml(_pendingRacketPhoto)}" alt="Raquette">`
         : `<span class="racket-photo-placeholder">Ajouter<br>une photo</span>`;
       const removeHidden = _pendingRacketPhoto ? '' : 'hidden';
       return `
@@ -4022,6 +4198,7 @@
     function saveRacketFromOverlay(name) {
       name = name || currentStatsPlayerName;
       if (!name) return;
+      if (!requireMarqueur('Connecte-toi pour enregistrer la raquette.')) return;
       const brand = document.getElementById('racket-brand')?.value || '';
       const brandCustom = document.getElementById('racket-brand-custom')?.value || '';
       const model = document.getElementById('racket-model')?.value || '';
@@ -4036,18 +4213,28 @@
       RACKET_SCORE_KEYS.forEach(({ key, id }) => {
         scores[key] = parseRacketScore(document.getElementById(id)?.value);
       });
-      setRacket(name, {
+      const st = document.getElementById('racket-save-status');
+      if (st) {
+        st.textContent = 'Enregistrement…';
+        st.style.color = 'var(--text-muted)';
+      }
+      const saved = setRacket(name, {
         brand, brandCustom, model, shape, balance, weight,
         materialFrame, materialCore, materialFace, type,
         photo: _pendingRacketPhoto || '',
         ...scores
       });
-      const st = document.getElementById('racket-save-status');
-      if (st) {
+      Promise.resolve(saved).then(photoOk => {
+        if (!st) return;
+        if (_pendingRacketPhoto && photoOk === false) {
+          st.textContent = 'Fiche enregistrée, photo non écrite dans Firebase. Réessayez connecté.';
+          st.style.color = '#dc2626';
+          return;
+        }
         st.textContent = '✓ Raquette enregistrée';
         st.style.color = 'var(--accent)';
         setTimeout(() => { if (st) st.textContent = ''; }, 2000);
-      }
+      });
       // Mettre à jour le badge score global dans l'overlay
       const summary = document.querySelector('#stats-racket-block .racket-global-summary');
       if (summary) {
@@ -4089,7 +4276,7 @@
         const rank = p.officialRank != null ? p.officialRank : (i + 1);
         const r = getRacket(p.name);
         const photo = r.photo
-          ? `<div class="rackets-th-photo"><img src="${r.photo}" alt=""></div>`
+          ? `<div class="rackets-th-photo"><img src="${escapeHtml(r.photo)}" alt=""></div>`
           : `<div class="rackets-th-photo"><span class="rackets-th-photo-empty">—</span></div>`;
         const globalBadge = renderRacketGlobalBadgeHtml(r);
         return `<th class="player-col" data-name="${escapeHtml(p.name)}" title="#${rank} ${escapeHtml(p.name)}">
@@ -4202,10 +4389,13 @@
       const status = document.getElementById(`finish-status-${mode}`);
       const saved = !!tournamentSaved;
       if (saveBtn) {
-        saveBtn.disabled = saved;
+        const canSave = isMarqueur();
+        saveBtn.disabled = saved || !canSave;
         saveBtn.textContent = saved
           ? '✓ Sauvegardé'
-          : (mode === 1 ? '💾 Sauvegarder ce match' : '💾 Sauvegarder ce tournoi');
+          : (!canSave
+            ? 'Connecte-toi pour enregistrer'
+            : (mode === 1 ? '💾 Sauvegarder ce match' : '💾 Sauvegarder ce tournoi'));
       }
       if (newBtn) newBtn.disabled = !saved;
       if (status) {
@@ -5979,6 +6169,7 @@
     }
 
     function saveCurrentTournament(mode) {
+      if (!requireMarqueur('Connecte-toi pour enregistrer.')) return;
       // Griser immédiatement pour feedback visuel (évite double-clic)
       if (tournamentSaved) {
         graySaveButton(mode);
@@ -6006,6 +6197,8 @@
           id: Date.now(),
           type: String(mode),
           season: new Date().getFullYear(),
+          createdBy: currentAuthUser.uid,
+          createdByName: currentAuthUser.email || currentAuthUser.displayName || currentAuthUser.uid,
           date: formatTournamentDate(new Date()),
           pointsPerMatch: (mode === 4) ? null : (pointsPerMatch || 16),
           ranking: sorted.map((p, i) => ({
@@ -6145,11 +6338,11 @@
           <h3>
             <div class="tourney-title">
               <span class="line1">${(t.type === '1' || t.type === 1) ? 'Match libre' : 'Tournoi'} <span class="type-badge type-${t.type || '8'}">${(t.type === '1' || t.type === 1) ? 'Libre' : ((t.type || '8') + ' joueurs')}</span></span>
-              <span class="line2">${dateLabel}${t.season ? ' · Saison ' + t.season : ''}</span>
+              <span class="line2">${dateLabel}${t.season ? ' · Saison ' + t.season : ''}${t.createdByName ? ' · ' + escapeHtml(t.createdByName) : ''}</span>
             </div>
             <span class="archive-actions">
               <button class="btn-export" style="width:auto;padding:4px 10px;font-size:0.8rem;" onclick="exportTournamentPDF(${t.id})">Export</button>
-              <button class="btn-secondary" style="width:auto;padding:4px 10px;font-size:0.8rem;" onclick="deleteTournament(${t.id})">Supprimer</button>
+              <button class="btn-secondary" style="width:auto;padding:4px 10px;font-size:0.8rem;" onclick="deleteTournament(${t.id})" ${isOrganizer() ? '' : 'disabled title="Organisateur seulement"'}>Supprimer</button>
             </span>
           </h3>
           ${(t.ranking || []).slice(0, playerCountForMode(mode)).map((p) => {
@@ -6830,6 +7023,7 @@
     }
 
     async function deleteTournament(id) {
+      if (!requireOrganizer('Seul un organisateur peut supprimer un tournoi.')) return;
       const okPin = await requestAdminPin('Entrez le code PIN admin pour supprimer ce tournoi.');
       if (!okPin) return;
       if (!confirm('Supprimer définitivement ce tournoi de Firebase ?\n\nCette action est irréversible et le tournoi disparaîtra pour tous les utilisateurs.')) return;
@@ -7627,6 +7821,7 @@
         document.getElementById('settings-content').classList.remove('hidden');
         updateTestModeUI();
         updateCloseSeasonButton();
+        updateOrganizerOnlyControls();
         cleanupOldAccessLogs(); // purge des mois précédents à l’ouverture de Réglages
         if (err) err.textContent = '';
       } else {
@@ -7684,6 +7879,7 @@
     }
 
     function closeAndStartNewSeason() {
+      if (!requireOrganizer('Seul un organisateur peut clôturer une saison.')) return;
       if (!canCloseSeason()) {
         alert('Clôture non autorisée pour le moment.');
         return;
@@ -7755,6 +7951,7 @@
     }
 
     function clearArchive() {
+      if (!requireOrganizer('Seul un organisateur peut vider l’archive.')) return;
       if (!confirm(`Effacer TOUT l'historique des tournois, la liste des joueurs connus et les ratings ELO ?\n\nChemin Firebase concerné : /${getArchivePath()}\nCette action est irréversible.`)) return;
       saveData({ tournaments: [], knownPlayers: [], eloRatings: {}, rackets: {}, eloRecalculated: true });
       renderArchiveForMode(8);
@@ -7788,6 +7985,10 @@
     function importArchive(event) {
       const file = event.target.files[0];
       if (!file) return;
+      if (!requireOrganizer('Seul un organisateur peut importer.')) {
+        event.target.value = '';
+        return;
+      }
       const reader = new FileReader();
       reader.onload = function(e) {
         try {
@@ -7828,7 +8029,13 @@
           });
 
           const existingIds = new Set(current.tournaments.map(t => t.id));
-          const newOnes = importedTournaments.filter(t => !existingIds.has(t.id));
+          const newOnes = importedTournaments.filter(t => !existingIds.has(t.id)).map(t => {
+            if (!t.createdBy && currentAuthUser) {
+              t.createdBy = currentAuthUser.uid;
+              t.createdByName = t.createdByName || currentAuthUser.email || 'import';
+            }
+            return t;
+          });
 
           const mergedTournaments = [...newOnes, ...current.tournaments];
           const mergedPlayers = mergeUniqueNames(
@@ -7915,9 +8122,162 @@
 
     let firebaseApp = null;
     let firebaseDb = null;
+    let firebaseAuth = null;
+    let currentAuthUser = null;
+    let currentRole = null; // 'admin' | 'membre' | null — lu dans /roles/{uid}
+    let authReady = false;
+    let authListenerStarted = false;
+    let authPersistenceSet = false;
     let currentLiveId = null;
     let isSpectator = false;
     let liveListener = null;
+
+    function isOrganizer() {
+      return currentRole === 'admin';
+    }
+
+    function isMarqueur() {
+      return currentRole === 'admin' || currentRole === 'membre';
+    }
+
+    function roleLabel() {
+      if (currentRole === 'admin') return 'organisateur';
+      if (currentRole === 'membre') return 'marqueur';
+      return 'sans rôle';
+    }
+
+    function requireMarqueur(message) {
+      if (isMarqueur()) return true;
+      alert(message || 'Connecte-toi pour enregistrer.');
+      return false;
+    }
+
+    function requireOrganizer(message) {
+      if (isOrganizer()) return true;
+      alert(message || 'Réservé à l’organisateur.');
+      return false;
+    }
+
+    function authErrorMessage(err) {
+      const code = (err && err.code) || '';
+      if (code === 'auth/invalid-email') return 'Email invalide.';
+      if (code === 'auth/user-not-found' || code === 'auth/wrong-password' || code === 'auth/invalid-credential') return 'Email ou mot de passe incorrect.';
+      if (code === 'auth/too-many-requests') return 'Trop de tentatives. Réessaie plus tard.';
+      if (code === 'auth/unauthorized-domain') return 'Domaine non autorisé dans Authentication → Settings → Authorized domains.';
+      if (code === 'auth/network-request-failed') return 'Réseau indisponible.';
+      return (err && err.message) ? err.message : 'Connexion impossible.';
+    }
+
+    function resolveRole(uid) {
+      if (!firebaseDb || !uid) return Promise.resolve(null);
+      return firebaseDb.ref('roles/' + uid).once('value').then(snap => {
+        const v = snap.val();
+        return (v === 'admin' || v === 'membre') ? v : null;
+      }).catch(err => {
+        console.warn('Lecture rôle impossible', err);
+        return null;
+      });
+    }
+
+    function updateAuthUI() {
+      const connected = !!currentAuthUser;
+      const on = connected && isMarqueur();
+      const label = !connected
+        ? 'Non connecté'
+        : ('Connecté : ' + roleLabel());
+      const footer = document.getElementById('footer-auth-status');
+      if (footer) {
+        footer.textContent = label;
+        footer.classList.toggle('auth-on', on);
+      }
+      const status = document.getElementById('settings-auth-status');
+      if (status) {
+        status.textContent = label;
+        status.classList.toggle('auth-on', on);
+      }
+      const loginForm = document.getElementById('settings-login-form');
+      const logoutBtn = document.getElementById('settings-logout-btn');
+      if (loginForm) loginForm.classList.toggle('hidden', connected);
+      if (logoutBtn) logoutBtn.classList.toggle('hidden', !connected);
+      [1, 4, 5, 6, 8].forEach(mode => {
+        if (typeof applyFinishActionsState === 'function') applyFinishActionsState(mode);
+      });
+      updateOrganizerOnlyControls();
+      [8, 6, 5, 4, 1].forEach(mode => {
+        if (typeof renderArchiveForMode === 'function' && document.getElementById('archive-list-' + mode)) {
+          renderArchiveForMode(mode);
+        }
+      });
+      const liveBtn = document.getElementById('btn-share-live');
+      if (liveBtn && !liveBtn.classList.contains('hidden') && !isMarqueur()) {
+        liveBtn.disabled = true;
+        liveBtn.textContent = 'Connecte-toi pour enregistrer';
+      }
+    }
+
+    function updateOrganizerOnlyControls() {
+      const org = isOrganizer();
+      ['btn-import-archive', 'btn-close-season', 'btn-open-logs'].forEach(id => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        if (!org) {
+          el.disabled = true;
+          el.title = 'Organisateur seulement';
+        } else if (id !== 'btn-close-season') {
+          el.disabled = false;
+          el.title = '';
+        }
+      });
+      if (org && typeof updateCloseSeasonButton === 'function') updateCloseSeasonButton();
+    }
+
+    function submitAuthLogin() {
+      const emailEl = document.getElementById('auth-email');
+      const passEl = document.getElementById('auth-password');
+      const errEl = document.getElementById('auth-login-error');
+      const email = (emailEl && emailEl.value || '').trim();
+      const password = passEl ? passEl.value : '';
+      if (!email || !password) {
+        if (errEl) errEl.textContent = 'Email et mot de passe requis.';
+        return;
+      }
+      if (!initFirebase() || !firebaseAuth) {
+        if (errEl) errEl.textContent = 'Firebase Auth indisponible.';
+        return;
+      }
+      if (errEl) errEl.textContent = 'Connexion…';
+      firebaseAuth.signInWithEmailAndPassword(email, password).then(() => {
+        if (passEl) passEl.value = '';
+        if (errEl) errEl.textContent = '';
+      }).catch(err => {
+        if (errEl) errEl.textContent = authErrorMessage(err);
+      });
+    }
+
+    function submitAuthLogout() {
+      if (!firebaseAuth) return;
+      firebaseAuth.signOut().catch(err => console.warn('Sign out', err));
+    }
+
+    function startAuthListener() {
+      if (authListenerStarted) return;
+      if (!initFirebase() || !firebaseAuth) return;
+      authListenerStarted = true;
+      firebaseAuth.onAuthStateChanged(user => {
+        currentAuthUser = user || null;
+        currentRole = null;
+        authReady = true;
+        if (!user) {
+          updateAuthUI();
+          return;
+        }
+        resolveRole(user.uid).then(role => {
+          if (currentAuthUser && currentAuthUser.uid === user.uid) currentRole = role;
+          updateAuthUI();
+          if (typeof logAccess === 'function') logAccess();
+        });
+      });
+    }
 
     function initFirebase() {
       try {
@@ -7927,6 +8287,13 @@
           firebaseApp = firebase.app();
         }
         firebaseDb = firebase.database();
+        firebaseAuth = firebase.auth();
+        if (!authPersistenceSet) {
+          authPersistenceSet = true;
+          firebaseAuth.setPersistence(firebase.auth.Auth.Persistence.LOCAL).catch(err => {
+            console.warn('Auth persistence', err);
+          });
+        }
         return true;
       } catch (e) {
         console.error('Firebase init error', e);
@@ -7947,6 +8314,7 @@
       return {
         createdAt: Date.now(),
         expiresAt: Date.now() + 24 * 60 * 60 * 1000,
+        ownerUid: currentAuthUser ? currentAuthUser.uid : null,
         data: {
           mode: currentMode,
           players: players,
@@ -7971,24 +8339,41 @@
 
     function pushLiveState() {
       if (!firebaseDb || !currentLiveId || isSpectator) return;
+      if (!isMarqueur()) return;
       const payload = buildLivePayload();
-      // Keep original createdAt if already exists
+      // Keep original createdAt / ownerUid if already exists
       firebaseDb.ref('lives/' + currentLiveId).once('value').then(snap => {
         const existing = snap.val();
         if (existing && existing.createdAt) {
           payload.createdAt = existing.createdAt;
           payload.expiresAt = existing.expiresAt || payload.expiresAt;
         }
+        if (existing && existing.ownerUid) payload.ownerUid = existing.ownerUid;
+        if (!payload.ownerUid && currentAuthUser) payload.ownerUid = currentAuthUser.uid;
         return firebaseDb.ref('lives/' + currentLiveId).set(payload);
       }).catch(err => console.warn('Live push error', err));
     }
 
     function startLiveSession() {
       if (!initFirebase()) return;
+      if (!isMarqueur()) {
+        currentLiveId = null;
+        const btn = document.getElementById('btn-share-live');
+        if (btn) {
+          btn.classList.remove('hidden');
+          btn.disabled = true;
+          btn.textContent = 'Connecte-toi pour enregistrer';
+        }
+        return;
+      }
       currentLiveId = generateLiveId();
       pushLiveState();
       const btn = document.getElementById('btn-share-live');
-      if (btn) btn.classList.remove('hidden');
+      if (btn) {
+        btn.disabled = false;
+        btn.textContent = 'LIVE';
+        btn.classList.remove('hidden');
+      }
     }
 
     function openLiveOverlay() {
@@ -8205,6 +8590,7 @@
     }
 
     function runMigrateImport() {
+      if (!requireOrganizer('Seul un organisateur peut migrer l’archive.')) return;
       const fileInput = document.getElementById('migrate-file');
       const file = fileInput.files[0];
       const status = document.getElementById('migrate-status');
@@ -8270,6 +8656,10 @@
           const tourMap = {};
           tournaments.forEach(t => {
             if (!t) return;
+            if (!t.createdBy && currentAuthUser) {
+              t.createdBy = currentAuthUser.uid;
+              t.createdByName = t.createdByName || currentAuthUser.email || 'import';
+            }
             tourMap[tournamentFirebaseKey(t)] = stripUndefined(t);
           });
           const payload = {
@@ -8991,6 +9381,9 @@
     buildPlayerInputs(4);
     buildPlayerInputs(1);
     updateTestModeUI(); // affiche la bannière si mode test déjà activé
+
+    // Session Auth (persistence locale) puis synchro archive
+    startAuthListener();
 
     // Démarrer la synchro archive Firebase (source de vérité)
     startArchiveSync();

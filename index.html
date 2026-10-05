@@ -1881,8 +1881,8 @@
     <span id="footer-auth-status">Non connecté</span>
     <span style="color:#cbd5e1;"> · </span>
     <a href="#" onclick="event.preventDefault(); openPlayersOverlay();">Joueurs</a>
-    <span style="color:#cbd5e1;"> · </span>
-    <a href="#" onclick="event.preventDefault(); openSettingsOverlay();">Réglages</a>
+    <span id="footer-settings-sep" style="color:#cbd5e1;"> · </span>
+    <a id="footer-settings-link" href="#" onclick="event.preventDefault(); openSettingsOverlay();">Réglages</a>
   </div>
 
   <div id="players-overlay" class="live-overlay hidden" onclick="if(event.target===this)closePlayersOverlay()">
@@ -1890,7 +1890,7 @@
       <button class="live-close" onclick="closePlayersOverlay()" aria-label="Fermer">×</button>
       <h3>Joueurs</h3>
       <p style="color:var(--text-muted); font-size:0.85rem; margin-bottom:12px;">
-        Créer une fiche est ouvert à un compte marqueur. Renommer ou supprimer une fiche : organisateur + code Réglages. L’identifiant ne change pas.
+        Créer une fiche est ouvert à un compte marqueur. Renommer ou supprimer une fiche : organisateur seulement. L’identifiant ne change pas.
       </p>
       <div class="player-fields">
         <input type="text" id="new-player-first" placeholder="Prénom" autocomplete="off">
@@ -1905,7 +1905,7 @@
   <input type="file" id="import-file" accept=".json,.txt,application/json,text/plain" style="display:none" onchange="importArchive(event)">
 
   <!-- Bouton flottant Partage Live (visible pendant un tournoi actif) -->
-  <button id="btn-share-live" class="btn-live hidden" onclick="openLiveOverlay()"
+  <button id="btn-share-live" class="btn-live hidden" onclick="shareLive()"
     style="position:fixed; bottom:20px; right:20px; width:auto; padding:10px 16px; border-radius:30px; box-shadow:0 4px 14px rgba(37,99,235,0.4); z-index:50; font-size:0.9rem; font-weight:700; letter-spacing:0.04em;">
     LIVE
   </button>
@@ -1964,21 +1964,7 @@
         <button type="button" id="settings-logout-btn" class="btn-secondary hidden" onclick="submitAuthLogout()">Se déconnecter</button>
       </div>
 
-      <!-- Écran PIN -->
-      <div id="settings-pin-screen">
-        <h3>⚙ Réglages</h3>
-        <p style="color:var(--text-muted); font-size:0.9rem; margin-bottom:16px;">
-          Accès protégé. Entrez le code PIN.
-        </p>
-        <input type="password" id="settings-pin-input" maxlength="4" inputmode="numeric" pattern="[0-9]*"
-          placeholder="••••" autocomplete="off"
-          style="width:100%; max-width:100%; box-sizing:border-box; padding:14px 12px; border:1px solid var(--border); border-radius:8px; font-size:1.5rem; text-align:center; letter-spacing:0.5em; background:#f8fafc;"
-          oninput="onSettingsPinInput(this)"
-          onkeydown="if(event.key==='Enter')checkSettingsPin()">
-        <p id="settings-pin-error" style="color:#dc2626; font-size:0.85rem; text-align:center; min-height:1.2em; margin-top:10px;"></p>
-      </div>
-
-      <!-- Contenu Réglages (après PIN) -->
+      <!-- Contenu Réglages (organisateur seulement) -->
       <div id="settings-content" class="hidden">
         <h3>⚙ Réglages</h3>
         <p style="color:var(--text-muted); font-size:0.9rem; margin-bottom:8px;">
@@ -2048,41 +2034,6 @@
         <button type="button" class="btn-danger" onclick="clearCurrentMonthAccessLogs()" style="flex:1;">Effacer</button>
         <button type="button" class="btn-secondary" onclick="closeAccessLogsOverlay()" style="flex:1;">Fermer</button>
       </div>
-    </div>
-  </div>
-
-  <!-- Popup PIN admin (réutilisable : suppression tournoi, etc.) -->
-  <div id="admin-pin-overlay" class="live-overlay hidden" onclick="if(event.target===this)closeAdminPinOverlay(false)">
-    <div class="live-modal">
-      <button class="live-close" onclick="closeAdminPinOverlay(false)" aria-label="Fermer">×</button>
-      <h3>🔒 Code admin</h3>
-      <p style="color:var(--text-muted); font-size:0.9rem; margin-bottom:16px;" id="admin-pin-message">
-        Entrez le code PIN pour confirmer cette action.
-      </p>
-      <input type="password" id="admin-pin-input" maxlength="4" inputmode="numeric" pattern="[0-9]*"
-        placeholder="••••" autocomplete="off"
-        style="width:100%; max-width:100%; box-sizing:border-box; padding:14px 12px; border:1px solid var(--border); border-radius:8px; font-size:1.5rem; text-align:center; letter-spacing:0.5em; background:#f8fafc;"
-        oninput="onAdminPinInput(this)"
-        onkeydown="if(event.key==='Enter')submitAdminPin()">
-      <p id="admin-pin-error" style="color:#dc2626; font-size:0.85rem; text-align:center; min-height:1.2em; margin-top:10px;"></p>
-    </div>
-  </div>
-
-  <!-- Mode migration unique (?migrate=1) — à retirer après le premier import -->
-  <div id="migrate-overlay" class="live-overlay hidden">
-    <div class="live-modal">
-      <h3>📦 Migration unique vers Firebase</h3>
-      <p style="color:var(--text-muted); font-size:0.9rem; margin-bottom:14px;">
-        Importe ton fichier <strong>.json</strong> ou <strong>.txt</strong> d’historique une seule fois.
-        Les données écraseront le contenu actuel de Firebase (<code>/archive</code>).
-      </p>
-      <div id="migrate-status" style="font-size:0.9rem; margin-bottom:12px; color:var(--text-muted);"></div>
-      <input type="file" id="migrate-file" accept=".json,.txt,application/json,text/plain" style="margin-bottom:14px; width:100%;">
-      <button type="button" id="migrate-btn" onclick="runMigrateImport()" style="margin-bottom:10px;">Importer dans Firebase</button>
-      <button type="button" class="btn-secondary" onclick="closeMigrateOverlay()">Fermer</button>
-      <p style="font-size:0.75rem; color:var(--text-muted); margin-top:14px; text-align:center;">
-        Après migration, retire <code>?migrate=1</code> de l’URL et (optionnel) ce bloc HTML.
-      </p>
     </div>
   </div>
 
@@ -2818,8 +2769,6 @@
       const rec = getPlayerRegistry().find(p => p.id === id);
       if (!rec) return;
       if (!requireOrganizer('Seul un organisateur peut modifier une fiche.')) return;
-      const ok = await requestAdminPin('Code Réglages pour modifier cette fiche.');
-      if (!ok) return;
       const row = document.getElementById('player-row-' + id);
       if (!row) return;
       row.innerHTML = `
@@ -3302,10 +3251,8 @@
       const uid = currentAuthUser && currentAuthUser.uid;
       next.forEach(t => {
         if (!t) return;
-        if (isOrganizer() && !t.createdBy && uid) {
-          t.createdBy = uid;
-          if (!t.createdByName) t.createdByName = (currentAuthUser.email || 'historique');
-        }
+        if (isOrganizer() && !t.createdBy && uid) t.createdBy = uid;
+        if (t.createdByName) delete t.createdByName;
         const key = tournamentFirebaseKey(t);
         nextKeys.add(key);
         const js = JSON.stringify(t);
@@ -3377,10 +3324,8 @@
         const newKeys = new Set();
         legacyList.forEach(t => {
           if (!t || typeof t !== 'object') return;
-          if (!t.createdBy && currentAuthUser) {
-            t.createdBy = currentAuthUser.uid;
-            t.createdByName = t.createdByName || currentAuthUser.email || 'historique';
-          }
+          if (!t.createdBy && currentAuthUser) t.createdBy = currentAuthUser.uid;
+          if (t.createdByName) delete t.createdByName;
           const key = tournamentFirebaseKey(t);
           newKeys.add(key);
           updates['tournaments/' + key] = stripUndefined(t);
@@ -4881,7 +4826,7 @@
         updateLeaderboard(4);
         updateHistory(4);
         hideAllPostSetActions4();
-        startLiveSession();
+        showLiveShareButton();
         return;
       }
 
@@ -5031,10 +4976,7 @@
       updateLeaderboard(mode);
       updateHistory(mode);
 
-      // Démarrer le live Firebase automatiquement
-      if (!isSpectator) {
-        startLiveSession();
-      }
+      if (!isSpectator) showLiveShareButton();
     }
 
     function loadRound(mode, roundIdx) {
@@ -6198,7 +6140,6 @@
           type: String(mode),
           season: new Date().getFullYear(),
           createdBy: currentAuthUser.uid,
-          createdByName: currentAuthUser.email || currentAuthUser.displayName || currentAuthUser.uid,
           date: formatTournamentDate(new Date()),
           pointsPerMatch: (mode === 4) ? null : (pointsPerMatch || 16),
           ranking: sorted.map((p, i) => ({
@@ -6338,11 +6279,11 @@
           <h3>
             <div class="tourney-title">
               <span class="line1">${(t.type === '1' || t.type === 1) ? 'Match libre' : 'Tournoi'} <span class="type-badge type-${t.type || '8'}">${(t.type === '1' || t.type === 1) ? 'Libre' : ((t.type || '8') + ' joueurs')}</span></span>
-              <span class="line2">${dateLabel}${t.season ? ' · Saison ' + t.season : ''}${t.createdByName ? ' · ' + escapeHtml(t.createdByName) : ''}</span>
+              <span class="line2">${dateLabel}${t.season ? ' · Saison ' + t.season : ''}</span>
             </div>
             <span class="archive-actions">
               <button class="btn-export" style="width:auto;padding:4px 10px;font-size:0.8rem;" onclick="exportTournamentPDF(${t.id})">Export</button>
-              <button class="btn-secondary" style="width:auto;padding:4px 10px;font-size:0.8rem;" onclick="deleteTournament(${t.id})" ${isOrganizer() ? '' : 'disabled title="Organisateur seulement"'}>Supprimer</button>
+              ${isOrganizer() ? `<button class="btn-danger" style="width:auto;padding:4px 10px;font-size:0.8rem;" onclick="deleteTournament(${t.id})">Supprimer</button>` : ''}
             </span>
           </h3>
           ${(t.ranking || []).slice(0, playerCountForMode(mode)).map((p) => {
@@ -6975,57 +6916,9 @@
         </svg>`;
     }
 
-    const SETTINGS_PIN = '2110';
-
-    // Promise résolue quand le PIN admin est validé (ou false si annulé)
-    let _adminPinResolve = null;
-
-    function requestAdminPin(message) {
-      return new Promise((resolve) => {
-        _adminPinResolve = resolve;
-        const msg = document.getElementById('admin-pin-message');
-        if (msg) msg.textContent = message || 'Entrez le code PIN pour confirmer cette action.';
-        const input = document.getElementById('admin-pin-input');
-        const err = document.getElementById('admin-pin-error');
-        if (input) { input.value = ''; }
-        if (err) err.textContent = '';
-        document.getElementById('admin-pin-overlay').classList.remove('hidden');
-        setTimeout(() => { if (input) input.focus(); }, 50);
-      });
-    }
-
-    function closeAdminPinOverlay(success) {
-      document.getElementById('admin-pin-overlay').classList.add('hidden');
-      const input = document.getElementById('admin-pin-input');
-      if (input) input.value = '';
-      if (_adminPinResolve) {
-        _adminPinResolve(!!success);
-        _adminPinResolve = null;
-      }
-    }
-
-    function onAdminPinInput(el) {
-      el.value = el.value.replace(/\D/g, '').slice(0, 4);
-      if (el.value.length === 4) submitAdminPin();
-    }
-
-    function submitAdminPin() {
-      const input = document.getElementById('admin-pin-input');
-      const err = document.getElementById('admin-pin-error');
-      if (!input || input.value.length < 4) return;
-      if (input.value === SETTINGS_PIN) {
-        closeAdminPinOverlay(true);
-      } else {
-        if (err) err.textContent = 'Code incorrect';
-        input.value = '';
-        input.focus();
-      }
-    }
 
     async function deleteTournament(id) {
       if (!requireOrganizer('Seul un organisateur peut supprimer un tournoi.')) return;
-      const okPin = await requestAdminPin('Entrez le code PIN admin pour supprimer ce tournoi.');
-      if (!okPin) return;
       if (!confirm('Supprimer définitivement ce tournoi de Firebase ?\n\nCette action est irréversible et le tournoi disparaîtra pour tous les utilisateurs.')) return;
       let archive = loadArchive();
       archive = archive.filter(t => t.id !== id);
@@ -7777,58 +7670,19 @@
     }
 
     function openSettingsOverlay() {
-      // Toujours repartir de l'écran PIN
-      document.getElementById('settings-pin-screen').classList.remove('hidden');
-      document.getElementById('settings-content').classList.add('hidden');
-      const pinInput = document.getElementById('settings-pin-input');
-      if (pinInput) {
-        pinInput.value = '';
-        pinInput.focus();
-      }
-      const err = document.getElementById('settings-pin-error');
-      if (err) err.textContent = '';
       const overlay = document.getElementById('settings-overlay');
       overlay.classList.remove('hidden');
       overlay.scrollTop = 0;
       document.body.style.overflow = 'hidden';
+      updateTestModeUI();
+      updateCloseSeasonButton();
+      updateOrganizerOnlyControls();
+      cleanupOldAccessLogs();
     }
 
     function closeSettingsOverlay() {
       document.getElementById('settings-overlay').classList.add('hidden');
       document.body.style.overflow = '';
-      // Reset pour la prochaine ouverture
-      document.getElementById('settings-pin-screen').classList.remove('hidden');
-      document.getElementById('settings-content').classList.add('hidden');
-      const pinInput = document.getElementById('settings-pin-input');
-      if (pinInput) pinInput.value = '';
-    }
-
-    function onSettingsPinInput(el) {
-      // Ne garder que les chiffres
-      el.value = el.value.replace(/\D/g, '').slice(0, 4);
-      if (el.value.length === 4) {
-        checkSettingsPin();
-      }
-    }
-
-    function checkSettingsPin() {
-      const input = document.getElementById('settings-pin-input');
-      const err = document.getElementById('settings-pin-error');
-      if (!input) return;
-      if (input.value.length < 4) return;
-      if (input.value === SETTINGS_PIN) {
-        document.getElementById('settings-pin-screen').classList.add('hidden');
-        document.getElementById('settings-content').classList.remove('hidden');
-        updateTestModeUI();
-        updateCloseSeasonButton();
-        updateOrganizerOnlyControls();
-        cleanupOldAccessLogs(); // purge des mois précédents à l’ouverture de Réglages
-        if (err) err.textContent = '';
-      } else {
-        if (err) err.textContent = 'Code incorrect';
-        input.value = '';
-        input.focus();
-      }
     }
 
     /**
@@ -8030,10 +7884,8 @@
 
           const existingIds = new Set(current.tournaments.map(t => t.id));
           const newOnes = importedTournaments.filter(t => !existingIds.has(t.id)).map(t => {
-            if (!t.createdBy && currentAuthUser) {
-              t.createdBy = currentAuthUser.uid;
-              t.createdByName = t.createdByName || currentAuthUser.email || 'import';
-            }
+            if (!t.createdBy && currentAuthUser) t.createdBy = currentAuthUser.uid;
+            if (t.createdByName) delete t.createdByName;
             return t;
           });
 
@@ -8211,8 +8063,11 @@
       const liveBtn = document.getElementById('btn-share-live');
       if (liveBtn && !liveBtn.classList.contains('hidden') && !isMarqueur()) {
         liveBtn.disabled = true;
-        liveBtn.textContent = 'Connecte-toi pour enregistrer';
+        liveBtn.textContent = 'Connecte-toi pour partager';
       }
+      const settingsContent = document.getElementById('settings-content');
+      if (settingsContent) settingsContent.classList.toggle('hidden', !isOrganizer());
+      if (isMarqueur() && typeof purgeExpiredLives === 'function') purgeExpiredLives();
     }
 
     function updateOrganizerOnlyControls() {
@@ -8352,6 +8207,50 @@
         if (!payload.ownerUid && currentAuthUser) payload.ownerUid = currentAuthUser.uid;
         return firebaseDb.ref('lives/' + currentLiveId).set(payload);
       }).catch(err => console.warn('Live push error', err));
+    }
+
+    function showLiveShareButton() {
+      const btn = document.getElementById('btn-share-live');
+      if (!btn || isSpectator) return;
+      btn.classList.remove('hidden');
+      if (!isMarqueur()) {
+        btn.disabled = true;
+        btn.textContent = 'Connecte-toi pour partager';
+        return;
+      }
+      btn.disabled = false;
+      btn.textContent = currentLiveId ? 'LIVE' : 'Partager';
+    }
+
+    function shareLive() {
+      if (!isMarqueur()) {
+        alert('Connecte-toi pour partager le live.');
+        return;
+      }
+      if (!players || !players.length) {
+        alert('Démarre d\'abord un match.');
+        return;
+      }
+      if (!currentLiveId) startLiveSession();
+      openLiveOverlay();
+    }
+
+    let expiredLivesPurged = false;
+    function purgeExpiredLives() {
+      if (expiredLivesPurged || !firebaseDb || !isMarqueur()) return;
+      expiredLivesPurged = true;
+      const now = Date.now();
+      firebaseDb.ref('lives').once('value').then(snap => {
+        const val = snap.val();
+        if (!val || typeof val !== 'object') return;
+        const updates = {};
+        Object.keys(val).forEach(id => {
+          const exp = val[id] && val[id].expiresAt;
+          if (exp && exp < now) updates[id] = null;
+        });
+        if (!Object.keys(updates).length) return;
+        firebaseDb.ref('lives').update(updates).catch(err => console.warn('Purge lives', err));
+      }).catch(err => console.warn('Lecture lives', err));
     }
 
     function startLiveSession() {
@@ -8577,142 +8476,6 @@
     const _originalStartTournament = startTournament;
     // On patch via appels directs plutôt que de remplacer (déjà modifié plus bas)
 
-    // ========== MIGRATION UNIQUE (?migrate=1) ==========
-    function openMigrateOverlay() {
-      document.getElementById('migrate-overlay').classList.remove('hidden');
-      document.getElementById('migrate-status').textContent = archiveReady
-        ? `Archive cloud chargée : ${cloudData.tournaments.length} tournoi(s), ${cloudData.knownPlayers.length} joueur(s).`
-        : 'Connexion à Firebase en cours…';
-    }
-
-    function closeMigrateOverlay() {
-      document.getElementById('migrate-overlay').classList.add('hidden');
-    }
-
-    function runMigrateImport() {
-      if (!requireOrganizer('Seul un organisateur peut migrer l’archive.')) return;
-      const fileInput = document.getElementById('migrate-file');
-      const file = fileInput.files[0];
-      const status = document.getElementById('migrate-status');
-      if (!file) {
-        status.textContent = 'Choisis un fichier .json ou .txt.';
-        status.style.color = '#dc2626';
-        return;
-      }
-      if (!initFirebase()) {
-        status.textContent = 'Firebase indisponible.';
-        status.style.color = '#dc2626';
-        return;
-      }
-      status.textContent = 'Lecture du fichier…';
-      status.style.color = 'var(--text-muted)';
-      const reader = new FileReader();
-      reader.onload = function(e) {
-        try {
-          const imported = JSON.parse(e.target.result);
-          let tournaments = [];
-          let knownPlayers = [];
-          let eloRatings = {};
-          let rackets = {};
-
-          if (imported && !Array.isArray(imported) && imported.tournaments) {
-            tournaments = imported.tournaments || [];
-            knownPlayers = imported.knownPlayers || extractNamesFromTournaments(tournaments);
-            eloRatings = (imported.eloRatings && typeof imported.eloRatings === 'object') ? imported.eloRatings : {};
-            rackets = (imported.rackets && typeof imported.rackets === 'object') ? imported.rackets : {};
-          } else if (Array.isArray(imported)) {
-            tournaments = imported;
-            knownPlayers = extractNamesFromTournaments(imported);
-          } else {
-            throw new Error('Format invalide');
-          }
-
-          tournaments = tournaments.map(t => {
-            const ranking = (t.ranking || []).map(p => {
-              if (typeof p.elo === 'number' && p.elo > 20) {
-                return { ...p, elo: Math.round(convertLegacyElo(p.elo) * 10) / 10 };
-              }
-              return p;
-            });
-            return { ...t, type: t.type || '8', ranking };
-          });
-          knownPlayers = mergeUniqueNames(knownPlayers, extractNamesFromTournaments(tournaments));
-
-          // Convertir les ratings vers 0-10
-          const convertedElo = {};
-          Object.keys(eloRatings).forEach(name => {
-            convertedElo[name] = Math.round(convertLegacyElo(eloRatings[name]) * 10) / 10;
-          });
-          eloRatings = convertedElo;
-
-          // Écriture structurée (enfants tournoi + meta), pas un .set() du blob
-          status.textContent = 'Écriture dans Firebase…';
-          const ref = getArchiveRef();
-          if (!ref) {
-            status.textContent = 'Firebase indisponible.';
-            status.style.color = '#dc2626';
-            return;
-          }
-          const tourMap = {};
-          tournaments.forEach(t => {
-            if (!t) return;
-            if (!t.createdBy && currentAuthUser) {
-              t.createdBy = currentAuthUser.uid;
-              t.createdByName = t.createdByName || currentAuthUser.email || 'import';
-            }
-            tourMap[tournamentFirebaseKey(t)] = stripUndefined(t);
-          });
-          const payload = {
-            schemaVersion: 2,
-            meta: {
-              knownPlayers,
-              eloRatings,
-              rackets,
-              playerRegistry: [],
-              deletedPlayerKeys: [],
-              eloById: {},
-              racketsById: {},
-              eloRecalculated: true,
-              updatedAt: Date.now()
-            },
-            tournaments: tourMap,
-            knownPlayers: null,
-            eloRatings: null,
-            rackets: null,
-            playerRegistry: null,
-            deletedPlayerKeys: null,
-            eloById: null,
-            racketsById: null,
-            eloRecalculated: null,
-            updatedAt: null
-          };
-          status.textContent = 'Écriture dans Firebase (/' + getArchivePath() + '/tournaments)…';
-          ref.update(payload).then(() => {
-            cloudData = { tournaments, knownPlayers, eloRatings, rackets };
-            rememberSyncedTournaments(tournaments);
-            archiveReady = true;
-            renderArchiveForMode(8);
-            renderArchiveForMode(6);
-            renderArchiveForMode(5);
-            renderArchiveForMode(4);
-            if (document.getElementById('panel-fip').classList.contains('active')) renderFIP();
-            status.textContent = `✅ Migration réussie vers /${getArchivePath()} : ${tournaments.length} tournoi(s), ${knownPlayers.length} joueur(s).`;
-            status.style.color = '#047857';
-            fileInput.value = '';
-          }).catch(err => {
-            console.error(err);
-            status.textContent = 'Erreur d’écriture Firebase : ' + (err.message || err);
-            status.style.color = '#dc2626';
-          });
-        } catch (err) {
-          status.textContent = 'Fichier JSON invalide.';
-          status.style.color = '#dc2626';
-        }
-      };
-      reader.readAsText(file);
-    }
-
-
     // ========== MODE 1 — Match libre ==========
 
     function populateFreePairSelects1() {
@@ -8811,7 +8574,7 @@
         renderCourt1();
         updateLeaderboard(1);
         updateHistory(1);
-        if (typeof startLiveSession === 'function') startLiveSession();
+        if (typeof showLiveShareButton === 'function') showLiveShareButton();
       } catch (err) {
         console.error('startFreeMatch error', err);
         alert('Impossible de démarrer le match libre : ' + (err && err.message ? err.message : err));
@@ -9405,10 +9168,6 @@
       if (liveId) {
         enterSpectatorMode(liveId);
         return;
-      }
-      if (params.get('migrate') === '1') {
-        // Attendre un court instant que Firebase soit prêt, puis ouvrir l’overlay
-        setTimeout(openMigrateOverlay, 400);
       }
     })();
   </script>

@@ -659,6 +659,21 @@
     #settings-auth-status.auth-on {
       margin-bottom: 10px;
     }
+    #footer-club-status {
+      display: inline-block;
+      font-family: "SF Mono", ui-monospace, Menlo, Consolas, monospace;
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      color: #1e40af;
+      background: #eff6ff;
+      border: 1px solid #bfdbfe;
+      border-radius: 999px;
+      padding: 3px 10px;
+      line-height: 1.4;
+      vertical-align: middle;
+    }
     #settings-auth-block input[type="email"],
     #settings-auth-block input[type="password"] {
       width: 100%;
@@ -1210,6 +1225,39 @@
       margin-top: 4px;
     }
 
+
+    #lang-switch {
+      position: fixed;
+      top: 10px;
+      right: 12px;
+      z-index: 60;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      background: #fff;
+      border: 1px solid #e2e8f0;
+      border-radius: 999px;
+      padding: 4px 8px;
+      box-shadow: 0 1px 4px rgba(15,23,42,0.08);
+    }
+    #lang-switch button {
+      width: auto;
+      background: transparent;
+      color: #64748b;
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      padding: 2px 4px;
+      border-radius: 6px;
+    }
+    #lang-switch button.active {
+      background: #1e40af;
+      color: #fff;
+    }
+    #lang-switch button:hover { background: transparent; color: #1e40af; }
+    #lang-switch button.active:hover { background: #1e3a8a; color: #fff; }
+    #lang-switch span { color: #cbd5e1; font-size: 0.72rem; }
+
     @media (max-width: 640px) {
       .racket-grid { grid-template-columns: 1fr; }
       .racket-top-row {
@@ -1230,6 +1278,12 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
 </head>
 <body>
+
+  <div id="lang-switch" aria-label="Language">
+    <button type="button" id="lang-fr" onclick="setLang('fr')">FR</button>
+    <span>/</span>
+    <button type="button" id="lang-en" onclick="setLang('en')">EN</button>
+  </div>
 
   <h1><span style="color:#1e40af;">Padel</span> <span style="color:#f97316;">Up</span></h1>
   <p class="subtitle" id="main-subtitle">Matchs à 4 • Sets (1 jeu = 4 pts)</p>
@@ -1880,6 +1934,8 @@
   <div id="footer-settings">
     <span id="footer-auth-status">Non connecté</span>
     <span style="color:#cbd5e1;"> · </span>
+    <span id="footer-club-status">Club FR</span>
+    <span style="color:#cbd5e1;"> · </span>
     <a href="#" onclick="event.preventDefault(); openPlayersOverlay();">Joueurs</a>
     <span id="footer-settings-sep" style="color:#cbd5e1;"> · </span>
     <a id="footer-settings-link" href="#" onclick="event.preventDefault(); openSettingsOverlay();">Réglages</a>
@@ -1890,7 +1946,7 @@
       <button class="live-close" onclick="closePlayersOverlay()" aria-label="Fermer">×</button>
       <h3>Joueurs</h3>
       <p style="color:var(--text-muted); font-size:0.85rem; margin-bottom:12px;">
-        Créer une fiche est ouvert à un compte marqueur. Renommer ou supprimer une fiche : organisateur seulement. L’identifiant ne change pas.
+        Créer une fiche est ouvert à un compte marqueur. Elle est rattachée au club ouvert. Renommer, supprimer ou changer les clubs : organisateur seulement.
       </p>
       <div class="player-fields">
         <input type="text" id="new-player-first" placeholder="Prénom" autocomplete="off">
@@ -1909,6 +1965,21 @@
     style="position:fixed; bottom:20px; right:20px; width:auto; padding:10px 16px; border-radius:30px; box-shadow:0 4px 14px rgba(37,99,235,0.4); z-index:50; font-size:0.9rem; font-weight:700; letter-spacing:0.04em;">
     LIVE
   </button>
+
+  <div id="club-qr-overlay" class="live-overlay hidden" style="z-index:1200" onclick="if(event.target===this)closeClubQrOverlay()">
+    <div class="live-modal">
+      <button class="live-close" onclick="closeClubQrOverlay()" aria-label="Fermer">×</button>
+      <h3 id="club-qr-title">QR du club</h3>
+      <p>Scannez pour ouvrir ce club. Ce n’est pas une connexion : le classement affiché est celui de cette adresse.</p>
+      <div class="live-link-row">
+        <input type="text" id="club-qr-url" readonly>
+        <button type="button" onclick="copyClubLink()">📋 Copier</button>
+      </div>
+      <div class="live-qr-wrap">
+        <img id="club-qr-img" alt="QR du club" width="200" height="200">
+      </div>
+    </div>
+  </div>
 
   <!-- Overlay Partage Live -->
   <div id="live-overlay" class="live-overlay hidden">
@@ -1935,10 +2006,10 @@
       <button class="live-close" onclick="closePlayerStatsOverlay()" aria-label="Fermer">×</button>
       <h3 id="stats-player-name">Joueur</h3>
       <div class="stats-grid" id="stats-grid"></div>
-      <p class="stats-chart-title">Évolution du % de victoire (par tournoi)</p>
+      <p class="stats-chart-title" id="stats-win-title">Évolution du % de victoire (par tournoi)</p>
       <div class="stats-chart-wrap" id="stats-chart-wrap"></div>
       <div id="stats-elo-hero" class="stats-elo-hero"></div>
-      <p class="stats-chart-title">Évolution du rating ELO (par tournoi)</p>
+      <p class="stats-chart-title" id="stats-elo-title">Évolution du rating ELO (par tournoi)</p>
       <div class="stats-chart-wrap" id="stats-elo-chart-wrap"></div>
       <div id="stats-racket-block" class="racket-form"></div>
     </div>
@@ -1967,6 +2038,12 @@
       <!-- Contenu Réglages (organisateur seulement) -->
       <div id="settings-content" class="hidden">
         <h3>⚙ Réglages</h3>
+        <div style="margin-bottom:16px; padding:14px; background:#eff6ff; border:1px solid #bfdbfe; border-radius:10px;">
+          <p style="font-size:0.9rem; font-weight:600; color:#1e40af; margin-bottom:8px;">Club actif</p>
+          <select id="club-select" onchange="setActiveClub(this.value)" style="width:100%; padding:10px 12px; border:1px solid var(--border); border-radius:8px; font-size:1rem; background:#fff;"></select>
+          <button type="button" class="btn-secondary" style="margin-top:10px;" onclick="openClubQrOverlay()">QR du club</button>
+          <p id="club-active-url" style="font-size:0.75rem; color:var(--text-muted); margin-top:8px; word-break:break-all;"></p>
+        </div>
         <p style="color:var(--text-muted); font-size:0.9rem; margin-bottom:8px;">
           Sauvegarde de secours ou restauration de l’historique Firebase.
         </p>
@@ -2038,6 +2115,239 @@
   </div>
 
   <script>
+
+    const I18N_EN = {
+      "Matchs à 4 • Sets (1 jeu = 4 pts)": "4-player matches • Sets (1 game = 4 pts)",
+      "à 4": "4",
+      "à 5": "5",
+      "à 6": "6",
+      "à 8": "8",
+      "Libre": "Free",
+      "Ranking": "Ranking",
+      "Entrer les noms des 4 joueurs": "Enter the 4 player names",
+      "Entrer les noms des 8 joueurs": "Enter the 8 player names",
+      "Entrer les noms des 5 joueurs": "Enter the 5 player names",
+      "Entrer les noms des 6 joueurs": "Enter the 6 player names",
+      "Composition des paires": "Pair setup",
+      "Paires équilibrées (ELO)": "Balanced pairs (ELO)",
+      "Tri par ELO décroissant → Paire A = J1 + J4 · Paire B = J2 + J3": "Sorted by ELO, highest first → Pair A = P1 + P4 · Pair B = P2 + P3",
+      "Paires libres": "Custom pairs",
+      "Vous choisissez manuellement les deux paires après validation des noms.": "You pick both pairs manually after confirming the names.",
+      "Indiquez les paires": "Set the pairs",
+      "Paire A – Joueur 1": "Pair A – Player 1",
+      "Paire A – Joueur 2": "Pair A – Player 2",
+      "Paire B – Joueur 1": "Pair B – Player 1",
+      "Paire B – Joueur 2": "Pair B – Player 2",
+      "Démarrer le match (4 joueurs)": "Start the match (4 players)",
+      "Démarrer le tournoi (8 joueurs)": "Start the tournament (8 players)",
+      "Démarrer le tournoi (5 joueurs)": "Start the tournament (5 players)",
+      "Démarrer le tournoi (6 joueurs)": "Start the tournament (6 players)",
+      "Démarrer le match libre": "Start the free match",
+      "Set 1": "Set 1",
+      "Sets : 0 – 0": "Sets: 0 – 0",
+      "Terrain": "Court",
+      "Terrain 1": "Court 1",
+      "Terrain 2": "Court 2",
+      "Terrain unique": "Single court",
+      "Enregistrer le set": "Save the set",
+      "Revanche ? (mêmes paires)": "Rematch? (same pairs)",
+      "Changer de paires": "Change pairs",
+      "Terminer": "Finish",
+      "Un autre set ?": "Another set?",
+      "Jouer le set décisif": "Play the deciding set",
+      "Arrêter ici et déclarer match nul": "Stop here and declare a draw",
+      "Enregistrer": "Save",
+      "Non enregistré": "Not saved",
+      "💾 Sauvegarder ce tournoi": "💾 Save this tournament",
+      "💾 Sauvegarder ce match": "💾 Save this match",
+      "Nouveau match": "New match",
+      "Nouveau tournoi": "New tournament",
+      "Classement en direct (4 joueurs)": "Live ranking (4 players)",
+      "Classement en direct (8 joueurs)": "Live ranking (8 players)",
+      "Classement en direct (5 joueurs)": "Live ranking (5 players)",
+      "Classement en direct (6 joueurs)": "Live ranking (6 players)",
+      "Rang": "Rank",
+      "Joueur": "Player",
+      "Joué": "Played",
+      "Points": "Points",
+      "1 jeu = 4 points • W = Set gagné • T = Set nul • L = Set perdu • Diff = Points marqués − Points encaissés": "1 game = 4 points • W = set won • T = set drawn • L = set lost • Diff = points scored − points conceded",
+      "W = Victoire • T = Match nul • L = Défaite • Diff = Points marqués − Points encaissés": "W = win • T = draw • L = loss • Diff = points scored − points conceded",
+      "Historique des sets (session en cours)": "Set history (current session)",
+      "Historique des matchs (tournoi en cours)": "Match history (current tournament)",
+      "Historique (session en cours)": "History (current session)",
+      "Historique des matchs à 4 joueurs": "4-player match history",
+      "Historique des tournois à 8 joueurs": "8-player tournament history",
+      "Historique des tournois à 5 joueurs": "5-player tournament history",
+      "Historique des tournois à 6 joueurs": "6-player tournament history",
+      "Historique des matchs libres": "Free match history",
+      "Niveau Équilibré Padel Up": "Padel Up balanced level",
+      "Utilise le classement Padel Up (pts/match) pour minimiser les écarts de force entre les équipes. Les joueurs sans historique sont placés aléatoirement. Les partenaires restent uniques.": "Uses the Padel Up ranking (pts/match) to keep teams close. Players with no history are placed at random. Partners stay unique.",
+      "Points par match": "Points per match",
+      "16 pts · 4 serv.": "16 pts · 4 serves",
+      "12 pts · 3 serv.": "12 pts · 3 serves",
+      "Enregistrer les scores & Tour suivant": "Save scores & next round",
+      "↩ Tour précédent": "↩ Previous round",
+      "Joueur en attente :": "Waiting player:",
+      "Joueurs en attente :": "Waiting players:",
+      "Nombre de rotations": "Number of rounds",
+      "6 tours": "6 rounds",
+      "8 tours": "8 rounds",
+      "Match libre — 4 joueurs": "Free match — 4 players",
+      "Match libre": "Free match",
+      "Enregistrer le score": "Save the score",
+      "Résultat du match libre": "Free match result",
+      "Match libre · compte comme 1 tournoi dans le ranking Padel Up": "Free match · counts as 1 tournament in the Padel Up ranking",
+      "Classement Joueurs": "Player ranking",
+      "Saison": "Season",
+      "Toutes saisons": "All seasons",
+      "Échelle ELO (0–10)": "ELO scale (0–10)",
+      "→ Débutant": "→ Beginner",
+      "→ Intermédiaire": "→ Intermediate",
+      "→ Avancé": "→ Advanced",
+      "→ Expert": "→ Expert",
+      "→ Elite": "→ Elite",
+      "Débutant": "Beginner",
+      "Intermédiaire": "Intermediate",
+      "Avancé": "Advanced",
+      "Expert": "Expert",
+      "Elite": "Elite",
+      "Classement Paires": "Pair ranking",
+      "Score Duo = (% Victoire × 0.5) + (Diff normalisé × 0.5) · Toutes les paires sont affichées": "Duo score = (win % × 0.5) + (normalized diff × 0.5) · All pairs are shown",
+      "Comparatif raquettes": "Racket comparison",
+      "Selon le classement joueurs de la saison · Cliquez un nom dans le ranking pour éditer": "Based on this season’s player ranking · Click a name in the ranking to edit",
+      "Source du classement raquette :": "Racket ranking source:",
+      "Critère": "Criterion",
+      "Non connecté": "Not signed in",
+      "Joueurs": "Players",
+      "Réglages": "Settings",
+      "Ajouter ce joueur": "Add this player",
+      "QR du club": "Club QR",
+      "Scannez pour ouvrir ce club. Ce n’est pas une connexion : le classement affiché est celui de cette adresse.": "Scan to open this club. This is not a login: the ranking shown is the one for this address.",
+      "📋 Copier": "📋 Copy",
+      "📡 Partage Live": "📡 Live share",
+      "Scannez le QR code ou copiez le lien. Les joueurs voient le tournoi en direct (lecture seule).": "Scan the QR code or copy the link. Players see the tournament live (read only).",
+      "Le live expire automatiquement après 24 h.": "The live link expires automatically after 24 h.",
+      "Évolution du % de victoire (par tournoi)": "Win rate over time (by tournament)",
+      "Évolution du rating ELO (par tournoi)": "ELO rating over time (by tournament)",
+      "Se connecter": "Sign in",
+      "Une fois par appareil. La session reste ouverte (persistence locale).": "Once per device. The session stays open (local persistence).",
+      "Se déconnecter": "Sign out",
+      "⚙ Réglages": "⚙ Settings",
+      "Club actif": "Active club",
+      "Sauvegarde de secours ou restauration de l’historique Firebase.": "Backup or restore of the Firebase history.",
+      "Exporter (.txt)": "Export (.txt)",
+      "Importer (.json / .txt)": "Import (.json / .txt)",
+      "Mode test": "Test mode",
+      "Utilise le chemin Firebase": "Uses the Firebase path",
+      "au lieu de": "instead of",
+      "L’historique de production n’est jamais modifié.": "Production history is never modified.",
+      "Nouvelle saison": "New season",
+      "Clôturer & démarrer une nouvelle saison": "Close & start a new season",
+      "Journal d’accès": "Access log",
+      "Voir le journal d’accès": "View the access log",
+      "L’import fusionne les tournois absents (pas d’écrasement total).": "Import merges missing tournaments (it does not replace everything).",
+      "📋 Journal d’accès": "📋 Access log",
+      "Chargement…": "Loading…",
+      "Effacer": "Clear",
+      "Fermer": "Close",
+      "Prénom": "First name",
+      "Nom (optionnel)": "Last name (optional)",
+      "Email": "Email",
+      "Mot de passe": "Password",
+      "Connecté : organisateur": "Signed in: organizer",
+      "Connecté : marqueur": "Signed in: marker",
+      "Connecté : sans rôle": "Signed in: no role",
+      "Tournoi terminé !": "Tournament finished!",
+      "Match nul (1-1)": "Draw (1-1)",
+      "Aucun joueur enregistré.": "No players saved.",
+      "Aucun joueur pour ce club.": "No players for this club.",
+      "Modifier": "Edit",
+      "Supprimer": "Delete",
+      "Position": "Position",
+      "Tournois": "Tournaments",
+      "Matchs": "Matches",
+      "% Victoire": "Win %",
+      "Pas encore de données.": "No data yet.",
+      "Tournoi": "Tournament",
+      "Saison": "Season",
+      "Export": "Export",
+      "Aucun tournoi sauvegardé pour ce mode.": "No saved tournament for this mode.",
+      "Aucun match libre sauvegardé.": "No saved free match."
+    };
+
+    let currentLang = 'fr';
+    try { currentLang = localStorage.getItem('padelup_lang') === 'en' ? 'en' : 'fr'; } catch (e) {}
+    let applyingLang = false;
+
+    function toEn(text) {
+      const raw = String(text == null ? '' : text);
+      if (I18N_EN[raw]) return I18N_EN[raw];
+      const trimmed = raw.trim();
+      if (I18N_EN[trimmed]) return raw.replace(trimmed, I18N_EN[trimmed]);
+      return raw
+        .replace(/^Tour (\d+) sur (\d+)$/, 'Round $1 of $2')
+        .replace(/^Set (\d+)$/, 'Set $1')
+        .replace(/^Sets : /, 'Sets: ')
+        .replace(/^Joueur (\d+)$/, 'Player $1')
+        .replace(/^Évolution du % de victoire · (.+) · ce club$/, 'Win rate · $1 · this club')
+        .replace(/^Évolution du rating ELO · tous les clubs$/, 'ELO rating · all clubs')
+        .replace(/^(\d+) tournois · ce club$/, '$1 tournaments · this club')
+        .replace(/^(\d+) tournoi · ce club$/, '$1 tournament · this club')
+        .replace(/^Nom du joueur (\d+)$/, 'Player $1 name')
+        .replace(/^Match libre • 4 joueurs • (\d+) pts$/, 'Free match • 4 players • $1 pts')
+        .replace(/^(\d+) Joueurs • 1 Terrain • (\d+) Points par Match$/, '$1 players • 1 court • $2 points per match')
+        .replace(/^(\d+) Joueurs • 2 Terrains • (\d+) Points par Match$/, '$1 players • 2 courts • $2 points per match')
+        .replace(/^Classement Joueurs & Paires • Saison en cours$/, 'Player & pair ranking • Current season')
+        .replace(/^(\d+) joueurs$/, '$1 players')
+        .replace(/ · Saison (\d+)/g, ' · Season $1');
+    }
+
+    function t(text) {
+      return currentLang === 'en' ? toEn(text) : String(text == null ? '' : text);
+    }
+
+    function setLang(lang) {
+      currentLang = lang === 'en' ? 'en' : 'fr';
+      try { localStorage.setItem('padelup_lang', currentLang); } catch (e) {}
+      document.documentElement.lang = currentLang === 'en' ? 'en' : 'fr';
+      const fr = document.getElementById('lang-fr');
+      const en = document.getElementById('lang-en');
+      if (fr) fr.classList.toggle('active', currentLang === 'fr');
+      if (en) en.classList.toggle('active', currentLang === 'en');
+      applyLang();
+    }
+
+    function applyLang(root) {
+      if (applyingLang) return;
+      applyingLang = true;
+      try {
+        const scope = root || document.body;
+        const walker = document.createTreeWalker(scope, NodeFilter.SHOW_TEXT);
+        const nodes = [];
+        while (walker.nextNode()) nodes.push(walker.currentNode);
+        nodes.forEach(n => {
+          const parent = n.parentElement;
+          if (!parent || parent.closest('script, style, #lang-switch')) return;
+          if (n.__fr == null) n.__fr = n.nodeValue;
+          else if (n.nodeValue !== n.__fr && n.nodeValue !== toEn(n.__fr)) n.__fr = n.nodeValue;
+          const next = currentLang === 'en' ? toEn(n.__fr) : n.__fr;
+          if (n.nodeValue !== next) n.nodeValue = next;
+        });
+        scope.querySelectorAll('input[placeholder], textarea[placeholder]').forEach(el => {
+          if (!el.dataset.frPh || (el.placeholder !== el.dataset.frPh && el.placeholder !== toEn(el.dataset.frPh))) el.dataset.frPh = el.placeholder;
+          const next = currentLang === 'en' ? toEn(el.dataset.frPh) : el.dataset.frPh;
+          if (el.placeholder !== next) el.placeholder = next;
+        });
+      } finally {
+        applyingLang = false;
+      }
+    }
+
+    const _alert = window.alert.bind(window);
+    const _confirm = window.confirm.bind(window);
+    window.alert = (msg) => _alert(t(msg));
+    window.confirm = (msg) => _confirm(t(msg));
+
     // Mode 8 rotation (unchanged)
     const ROTATION_MATRIX_8 = [
       { c1: [[0, 2], [1, 3]], c2: [[4, 6], [5, 7]] },
@@ -2135,6 +2445,122 @@
 
     function getArchivePath() {
       return isTestMode ? 'archive_test' : 'archive';
+    }
+
+    // Club : le lien nu est le principal. ?club=clubDE isole tournois, classements et lives.
+    const CLUBS = [
+      { id: 'principal', slug: '', label: 'Club FR' },
+      { id: 'clubDE', slug: 'clubDE', label: 'Club DE' }
+    ];
+    const PRINCIPAL_CLUB = 'principal';
+    let currentClubId = PRINCIPAL_CLUB;
+
+    function clubById(id) {
+      return CLUBS.find(c => c.id === id) || CLUBS[0];
+    }
+
+    function readClubFromUrl() {
+      const slug = new URLSearchParams(window.location.search).get('club') || '';
+      const found = CLUBS.find(c => c.slug === slug);
+      currentClubId = found ? found.id : PRINCIPAL_CLUB;
+    }
+
+    function tournamentClubId(t) {
+      return (t && t.clubId) ? t.clubId : PRINCIPAL_CLUB;
+    }
+
+    function playerClubIds(rec) {
+      if (rec && Array.isArray(rec.clubs) && rec.clubs.length) return rec.clubs.slice();
+      return [PRINCIPAL_CLUB];
+    }
+
+    function playerBelongsToClub(name, clubId) {
+      const rec = findPlayerRecord(name);
+      if (!rec) return clubId === PRINCIPAL_CLUB;
+      return playerClubIds(rec).includes(clubId);
+    }
+
+    function clubPublicUrl(clubId) {
+      const base = window.location.origin + window.location.pathname;
+      const club = clubById(clubId);
+      return club.slug ? base + '?club=' + encodeURIComponent(club.slug) : base;
+    }
+
+    function clubColor(clubId) {
+      return clubId === 'clubDE' ? '#f97316' : '#2563eb';
+    }
+
+    function updateClubChrome() {
+      const club = clubById(currentClubId);
+      const banner = document.getElementById('footer-club-status');
+      if (banner) banner.textContent = club.label;
+      const sel = document.getElementById('club-select');
+      if (sel) {
+        sel.innerHTML = CLUBS.map(c => `<option value="${c.id}">${c.label}</option>`).join('');
+        sel.value = currentClubId;
+      }
+      const urlEl = document.getElementById('club-active-url');
+      if (urlEl) urlEl.textContent = clubPublicUrl(currentClubId);
+    }
+
+    function setActiveClub(clubId) {
+      if (!CLUBS.some(c => c.id === clubId)) return;
+      currentClubId = clubId;
+      const url = new URL(window.location.href);
+      const club = clubById(clubId);
+      if (club.slug) url.searchParams.set('club', club.slug);
+      else url.searchParams.delete('club');
+      history.replaceState({}, '', url.pathname + url.search + url.hash);
+      updateClubChrome();
+      [8, 6, 5, 4, 1].forEach(mode => {
+        if (typeof renderArchiveForMode === 'function' && document.getElementById('archive-list-' + mode)) {
+          renderArchiveForMode(mode);
+        }
+      });
+      if (document.getElementById('panel-fip')?.classList.contains('active') && typeof renderFIP === 'function') renderFIP();
+      if (typeof pushLiveState === 'function') pushLiveState();
+    }
+
+    function openClubQrOverlay() {
+      const url = clubPublicUrl(currentClubId);
+      const title = document.getElementById('club-qr-title');
+      if (title) title.textContent = 'QR · ' + clubById(currentClubId).label;
+      const input = document.getElementById('club-qr-url');
+      if (input) input.value = url;
+      const img = document.getElementById('club-qr-img');
+      if (img) img.src = 'https://api.qrserver.com/v1/create-qr-code/?size=200x200&margin=8&data=' + encodeURIComponent(url);
+      document.getElementById('club-qr-overlay').classList.remove('hidden');
+    }
+
+    function closeClubQrOverlay() {
+      document.getElementById('club-qr-overlay').classList.add('hidden');
+    }
+
+    function copyClubLink() {
+      const input = document.getElementById('club-qr-url');
+      if (!input || !input.value) return;
+      navigator.clipboard.writeText(input.value).then(() => {
+        const btn = input.nextElementSibling;
+        const old = btn.textContent;
+        btn.textContent = '✓ Copié';
+        setTimeout(() => { btn.textContent = old; }, 1500);
+      }).catch(() => {
+        input.select();
+        document.execCommand('copy');
+      });
+    }
+
+    function setPlayerClub(id, clubId, on) {
+      if (!requireOrganizer('Seul un organisateur peut assigner un club.')) return;
+      const rec = getPlayerRegistry().find(p => p && p.id === id);
+      if (!rec) return;
+      const next = new Set(playerClubIds(rec));
+      if (on) next.add(clubId);
+      else next.delete(clubId);
+      if (!next.size) next.add(currentClubId || PRINCIPAL_CLUB);
+      rec.clubs = [...next];
+      saveData(cloudData);
+      renderPlayersList();
     }
 
     function getArchiveRef() {
@@ -2688,7 +3114,7 @@
       const name = playerDisplayName(firstName, lastName);
       const key = playerKey(firstName);
       cloudData.deletedPlayerKeys = (cloudData.deletedPlayerKeys || []).filter(k => k !== key);
-      const rec = { id: makePlayerId(), name, firstName, lastName };
+      const rec = { id: makePlayerId(), name, firstName, lastName, clubs: [currentClubId] };
       getPlayerRegistry().push(rec);
       cloudData.knownPlayers = mergeUniqueNames(cloudData.knownPlayers, [name]);
       saveData(cloudData);
@@ -2737,7 +3163,20 @@
         host.innerHTML = '<p style="color:var(--text-muted); text-align:center;">Aucun joueur enregistré.</p>';
         return;
       }
-      host.innerHTML = list.map(p => `
+      const org = typeof isOrganizer === 'function' && isOrganizer();
+      const visible = org ? list : list.filter(p => playerClubIds(p).includes(currentClubId));
+      if (!visible.length) {
+        host.innerHTML = '<p style="color:var(--text-muted); text-align:center;">Aucun joueur pour ce club.</p>';
+        return;
+      }
+      host.innerHTML = visible.map(p => {
+        const clubs = playerClubIds(p);
+        const checks = org ? `<div style="display:flex; gap:12px; margin-top:8px; font-size:0.82rem;">${CLUBS.map(c => `
+          <label style="display:flex; align-items:center; gap:6px; cursor:pointer;">
+            <input type="checkbox" ${clubs.includes(c.id) ? 'checked' : ''} onchange="setPlayerClub('${p.id}', '${c.id}', this.checked)">
+            ${c.label}
+          </label>`).join('')}</div>` : '';
+        return `
         <div class="past-tournament" id="player-row-${p.id}">
           <div style="display:flex; justify-content:space-between; gap:8px; align-items:center;">
             <div style="min-width:0;">
@@ -2746,7 +3185,9 @@
             </div>
             <button type="button" class="btn-secondary" style="width:auto; padding:8px 12px; flex-shrink:0;" onclick="beginEditPlayer('${p.id}')">Modifier</button>
           </div>
-        </div>`).join('');
+          ${checks}
+        </div>`;
+      }).join('');
     }
 
     function submitNewPlayer() {
@@ -3507,8 +3948,12 @@
       });
     }
 
+    function loadAllTournaments() {
+      return loadData().tournaments || [];
+    }
+
     function loadArchive() {
-      return loadData().tournaments;
+      return loadAllTournaments().filter(t => tournamentClubId(t) === currentClubId);
     }
 
     function saveArchive(tournaments) {
@@ -4291,7 +4736,7 @@
     }
 
     function getKnownPlayers() {
-      return loadData().knownPlayers || [];
+      return (loadData().knownPlayers || []).filter(n => playerBelongsToClub(n, currentClubId));
     }
 
     function addKnownPlayers(names) {
@@ -6154,8 +6599,16 @@
             played: p.played,
             elo: Math.round(clampElo(p.elo) * 10) / 10
           })),
-          matchHistory: matchHistory
+          matchHistory: matchHistory,
+          clubId: currentClubId
         };
+        (tournament.ranking || []).forEach(p => {
+          const rec = findPlayerRecord(p.playerId || p.name);
+          if (!rec) return;
+          const clubs = new Set(playerClubIds(rec));
+          clubs.add(currentClubId);
+          rec.clubs = [...clubs];
+        });
         // Firebase refuse undefined — n'ajouter totalRounds qu'en mode 6
         if (mode === 6) {
           tournament.totalRounds = totalRounds6 || 6;
@@ -6724,6 +7177,7 @@
     function openPlayerStatsOverlay(name) {
       currentStatsPlayerName = name;
       const archive = loadArchive();
+      const allChrono = [...loadAllTournaments()].reverse();
       // archive est stockée du plus récent au plus ancien (unshift) → on inverse pour l'ordre chronologique
       const chronological = [...archive].reverse();
       const playerTournaments = chronological.filter(t => (t.ranking || []).some(p => samePlayer(p.name, name)));
@@ -6747,9 +7201,15 @@
         if (p.rank === 3) thirds++;
         const tournoiPct = m > 0 ? ((p.wins || 0) / m) * 100 : 0;
         series.push({ label: `T${idx + 1}`, pct: tournoiPct });
-        if (typeof p.elo === 'number') {
-          eloSeries.push({ label: `T${idx + 1}`, value: p.elo });
-        }
+      });
+      allChrono.filter(t => (t.ranking || []).some(p => samePlayer(p.name, name))).forEach((t, idx) => {
+        const p = (t.ranking || []).find(pp => samePlayer(pp.name, name));
+        if (!p || typeof p.elo !== 'number') return;
+        eloSeries.push({
+          label: `T${idx + 1}`,
+          value: p.elo,
+          color: clubColor(tournamentClubId(t))
+        });
       });
 
       const winPct = matches > 0 ? (wins / matches) * 100 : 0;
@@ -6761,8 +7221,13 @@
       // Convertir aussi les points du graphique si anciennes valeurs
       const eloSeriesConverted = eloSeries.map(s => ({
         label: s.label,
-        value: convertLegacyElo(s.value)
+        value: convertLegacyElo(s.value),
+        color: s.color
       }));
+      const winTitle = document.getElementById('stats-win-title');
+      if (winTitle) winTitle.textContent = `Évolution du % de victoire · ${tournaments} tournoi${tournaments > 1 ? 's' : ''} · ce club`;
+      const eloTitle = document.getElementById('stats-elo-title');
+      if (eloTitle) eloTitle.textContent = 'Évolution du rating ELO · tous les clubs';
 
       const fullRanking = computeFipRanking(archive);
       const rankIndex = fullRanking.findIndex(p => samePlayer(p.name, name));
@@ -6899,12 +7364,12 @@
         <text x="${leftPad - 6}" y="${yFor(v) + 3}" text-anchor="end" font-size="9" fill="#64748b">${(Math.round(v * 10) / 10).toFixed(1)}</text>
       `).join('');
 
-      const points = series.map((s, i) => ({ x: xFor(i), y: yFor(s.value), value: s.value, label: s.label }));
+      const points = series.map((s, i) => ({ x: xFor(i), y: yFor(s.value), value: s.value, label: s.label, color: s.color }));
       const polylinePoints = points.map(p => `${p.x},${p.y}`).join(' ');
 
       const dotsAndLabels = points.map(p => `
         <text x="${p.x}" y="${p.y - 8}" text-anchor="middle" font-size="9" fill="#0f172a">${(Math.round(p.value * 10) / 10).toFixed(1)}</text>
-        <circle cx="${p.x}" cy="${p.y}" r="4" fill="#ffffff" stroke="#2563eb" stroke-width="2" />
+        <circle cx="${p.x}" cy="${p.y}" r="4" fill="#ffffff" stroke="${p.color || '#2563eb'}" stroke-width="2" />
         <text x="${p.x}" y="${height - 8}" text-anchor="middle" font-size="9" fill="#64748b">${p.label}</text>
       `).join('');
 
@@ -6920,10 +7385,7 @@
     async function deleteTournament(id) {
       if (!requireOrganizer('Seul un organisateur peut supprimer un tournoi.')) return;
       if (!confirm('Supprimer définitivement ce tournoi de Firebase ?\n\nCette action est irréversible et le tournoi disparaîtra pour tous les utilisateurs.')) return;
-      let archive = loadArchive();
-      archive = archive.filter(t => t.id !== id);
-      // Mettre à jour les tournois en mémoire
-      cloudData.tournaments = archive;
+      cloudData.tournaments = (cloudData.tournaments || []).filter(t => t.id !== id);
       // Recalculer les ELO à partir de l'historique restant (ou reset si vide)
       recalculateAllEloFromHistory();
       // Sauvegarder tournois + ELO recalculés
@@ -7806,8 +8268,11 @@
 
     function clearArchive() {
       if (!requireOrganizer('Seul un organisateur peut vider l’archive.')) return;
-      if (!confirm(`Effacer TOUT l'historique des tournois, la liste des joueurs connus et les ratings ELO ?\n\nChemin Firebase concerné : /${getArchivePath()}\nCette action est irréversible.`)) return;
-      saveData({ tournaments: [], knownPlayers: [], eloRatings: {}, rackets: {}, eloRecalculated: true });
+      const label = clubById(currentClubId).slug ? clubById(currentClubId).label : 'principal';
+      if (!confirm(`Effacer les tournois du club ${label} ?\n\nLes joueurs, l’ELO et les autres clubs ne sont pas touchés.\nCette action est irréversible.`)) return;
+      cloudData.tournaments = (cloudData.tournaments || []).filter(t => tournamentClubId(t) !== currentClubId);
+      recalculateAllEloFromHistory();
+      saveData({ tournaments: cloudData.tournaments, knownPlayers: cloudData.knownPlayers || [], eloRatings: cloudData.eloRatings || {}, rackets: cloudData.rackets || {}, eloRecalculated: true });
       renderArchiveForMode(8);
       renderArchiveForMode(6);
       renderArchiveForMode(5);
@@ -8161,8 +8626,9 @@
     }
 
     function getLiveShareUrl(liveId) {
-      const base = window.location.origin + window.location.pathname;
-      return base + '?live=' + encodeURIComponent(liveId);
+      const url = new URL(clubPublicUrl(currentClubId));
+      url.searchParams.set('live', liveId);
+      return url.toString();
     }
 
     function buildLivePayload() {
@@ -8170,8 +8636,10 @@
         createdAt: Date.now(),
         expiresAt: Date.now() + 24 * 60 * 60 * 1000,
         ownerUid: currentAuthUser ? currentAuthUser.uid : null,
+        clubId: currentClubId,
         data: {
           mode: currentMode,
+          clubId: currentClubId,
           players: players,
           currentRound: currentRound,
           matchHistory: matchHistory,
@@ -9162,8 +9630,14 @@
     setTimeout(logAccess, 600);
 
     // Détection mode spectateur / migration
+    readClubFromUrl();
+    updateClubChrome();
+    setLang(currentLang);
+    new MutationObserver(() => { if (!applyingLang && currentLang === 'en') applyLang(); }).observe(document.body, { subtree: true, childList: true, characterData: true });
+
     (function checkUrlParams() {
       const params = new URLSearchParams(window.location.search);
+      readClubFromUrl();
       const liveId = params.get('live');
       if (liveId) {
         enterSpectatorMode(liveId);

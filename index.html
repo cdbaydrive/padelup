@@ -2426,7 +2426,7 @@
     let freeMatchScoreLocked = false; // true après Enregistrer, jusqu'à revanche / nouveau match
 
     // ========== ARCHIVE CLOUD (Firebase Realtime Database) ==========
-    // /archive (ou /archive_test)
+    // /archive/clubs/{clubId} (ou /archive_test/clubs/{clubId})
     //   schemaVersion: 2
     //   meta: fiches sans photo  ·  racketPhotos/{playerId}: image, non écoutée par le tournoi
     //   tournaments/{id}: un enfant par tournoi (plus de .set() du blob entier)
@@ -2443,16 +2443,21 @@
     let isTestMode = false;
     try { localStorage.setItem('padelup_test_mode', '0'); } catch (e) { /* ignore */ }
 
-    function getArchivePath() {
+    function getArchiveRootPath() {
       return isTestMode ? 'archive_test' : 'archive';
     }
 
-    // Club : le lien nu est le principal. ?club=clubDE isole tournois, classements et lives.
+    // Chemin dédié au club actif : /archive/clubs/{clubId} (ou archive_test)
+    function getArchivePath() {
+      return getArchiveRootPath() + '/clubs/' + (currentClubId || PRINCIPAL_CLUB);
+    }
+
+    // Club : le lien nu est Club FR. ?club=clubDE isole tournois, classements et lives.
     const CLUBS = [
-      { id: 'principal', slug: '', label: 'Club FR' },
+      { id: 'clubFR', slug: '', label: 'Club FR' },
       { id: 'clubDE', slug: 'clubDE', label: 'Club DE' }
     ];
-    const PRINCIPAL_CLUB = 'principal';
+    const PRINCIPAL_CLUB = 'clubFR';
     let currentClubId = PRINCIPAL_CLUB;
 
     function clubById(id) {
@@ -2466,7 +2471,10 @@
     }
 
     function tournamentClubId(t) {
-      return (t && t.clubId) ? t.clubId : PRINCIPAL_CLUB;
+      const raw = (t && t.clubId) ? t.clubId : '';
+      // Compat : anciens tournois sans clubId ou avec "principal" → Club FR
+      if (!raw || raw === 'principal') return PRINCIPAL_CLUB;
+      return raw;
     }
 
     function playerClubIds(rec) {
@@ -2505,6 +2513,11 @@
 
     function setActiveClub(clubId) {
       if (!CLUBS.some(c => c.id === clubId)) return;
+      if (clubId === currentClubId) {
+        updateClubChrome();
+        return;
+      }
+      const previousPath = getArchivePath();
       currentClubId = clubId;
       const url = new URL(window.location.href);
       const club = clubById(clubId);
@@ -2512,6 +2525,30 @@
       else url.searchParams.delete('club');
       history.replaceState({}, '', url.pathname + url.search + url.hash);
       updateClubChrome();
+
+      // Changer de club = charger une archive complètement isolée
+      if (firebaseDb) {
+        detachArchiveListeners(previousPath);
+      }
+      archiveListener = null;
+      archiveSyncToken++;
+      lastSyncedTournamentJson = new Map();
+      cloudData = {
+        tournaments: [],
+        knownPlayers: [],
+        eloRatings: {},
+        rackets: {},
+        playerRegistry: [],
+        deletedPlayerKeys: [],
+        eloById: {},
+        racketsById: {},
+        eloRecalculated: false,
+        racketPhotos: {},
+        _racketPhotosLoaded: false
+      };
+      archiveReady = false;
+      startArchiveSync();
+
       [8, 6, 5, 4, 1].forEach(mode => {
         if (typeof renderArchiveForMode === 'function' && document.getElementById('archive-list-' + mode)) {
           renderArchiveForMode(mode);
@@ -3702,8 +3739,12 @@
         }
       });
       if (isOrganizer()) {
-        lastSyncedTournamentJson.forEach((_, key) => {
-          if (!nextKeys.has(key)) updates[key] = null;
+        // Suppression uniquement des clés absentes de la liste du club courant
+        // (le chemin Firebase est déjà isolé par club).
+        lastSyncedTournamentJson.forEach((js, key) => {
+          if (!nextKeys.has(key)) {
+            updates[key] = null;
+          }
         });
       }
       if (!Object.keys(updates).length) return Promise.resolve();
@@ -3925,6 +3966,39 @@
       });
     }
 
+    /**
+     * Migration one-shot : déplace les tournois de l'ancien /archive/tournaments
+     * vers /archive/clubs/{clubId}/tournaments selon leur clubId.
+     * Ne fait rien si le club a déjà des données.
+     */
+    function migrateToPerClubIfNeeded() {
+      if (!isOrganizer() || !firebaseDb) return Promise.resolve();
+      const clubRef = getArchiveRef();
+      if (!clubRef) return Promise.resolve();
+      const rootRef = firebaseDb.ref(getArchiveRootPath());
+      return clubRef.once('value').then(clubSnap => {
+        const clubVal = clubSnap.val();
+        if (clubVal && (clubVal.tournaments || clubVal.meta)) return;
+        return rootRef.child('tournaments').once('value').then(oldSnap => {
+          const old = oldSnap.val();
+          if (!old || typeof old !== 'object') return;
+          const updates = {};
+          let n = 0;
+          Object.keys(old).forEach(key => {
+            const t = old[key];
+            if (!t || typeof t !== 'object') return;
+            if (tournamentClubId(t) === currentClubId) {
+              updates['tournaments/' + key] = stripUndefined(t);
+              n++;
+            }
+          });
+          if (!n) return;
+          console.log('[migrate] ' + n + ' tournoi(s) → ' + getArchivePath());
+          return clubRef.update(updates);
+        });
+      }).catch(err => console.warn('Migration per-club', err));
+    }
+
     function startArchiveSync() {
       if (!initFirebase()) {
         console.warn('Firebase indisponible — archive cloud non démarrée');
@@ -3936,8 +4010,11 @@
       if (!ref) return;
       const token = ++archiveSyncToken;
       archiveListener = token;
-      ref.once('value').then(snap => {
+      migrateToPerClubIfNeeded().then(() => {
         if (token !== archiveSyncToken) return;
+        return ref.once('value');
+      }).then(snap => {
+        if (token !== archiveSyncToken || !snap) return;
         return migrateLegacyArchiveIfNeeded(ref, snap.val());
       }).then(() => {
         if (token !== archiveSyncToken) return;
@@ -8268,7 +8345,7 @@
 
     function clearArchive() {
       if (!requireOrganizer('Seul un organisateur peut vider l’archive.')) return;
-      const label = clubById(currentClubId).slug ? clubById(currentClubId).label : 'principal';
+      const label = clubById(currentClubId).label || 'Club FR';
       if (!confirm(`Effacer les tournois du club ${label} ?\n\nLes joueurs, l’ELO et les autres clubs ne sont pas touchés.\nCette action est irréversible.`)) return;
       cloudData.tournaments = (cloudData.tournaments || []).filter(t => tournamentClubId(t) !== currentClubId);
       recalculateAllEloFromHistory();

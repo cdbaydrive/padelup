@@ -559,7 +559,7 @@
     .stats-box .stats-value { font-size: 1.4rem; font-weight: 700; color: var(--court-bg); }
     .stats-box .stats-label { font-size: 0.72rem; color: var(--text-muted); text-transform: uppercase; margin-top: 2px; }
     .stats-chart-title { font-size: 0.85rem; color: var(--text-muted); margin: 18px 0 8px; }
-    .stats-chart-wrap { overflow-x: auto; border: 1px solid var(--border); border-radius: 10px; padding: 8px 4px; }
+    .stats-chart-wrap { overflow: hidden; border: 1px solid var(--border); border-radius: 10px; padding: 8px 4px; }
     .stats-chart-empty { color: var(--text-muted); font-size: 0.85rem; text-align: center; padding: 12px; }
     .live-link-row button {
       width: auto; padding: 10px 14px; font-size: 0.9rem; white-space: nowrap;
@@ -2936,6 +2936,7 @@
 
       if (needsPush) {
         pushArchiveToFirebase();
+        syncTournamentDiff(); // persiste ranking[].elo recalculés
       }
 
       // Rafraîchir les vues qui dépendent de l'archive
@@ -3534,12 +3535,19 @@
         });
       });
 
-      // Elo finaux
+      // Elo finaux — source de vérité = eloById, eloRatings = miroir
       const finalRatings = {};
       Object.keys(ratings).forEach(n => {
         finalRatings[n] = Math.round(ratings[n] * 10) / 10;
       });
       cloudData.eloRatings = finalRatings;
+
+      // Synchroniser eloById (source principale)
+      if (!cloudData.eloById) cloudData.eloById = {};
+      Object.keys(finalRatings).forEach(name => {
+        const id = ensurePlayerId(name);
+        if (id) cloudData.eloById[id] = finalRatings[name];
+      });
 
       // Enrichir knownPlayers si besoin
       cloudData.knownPlayers = mergeUniqueNames(cloudData.knownPlayers, [...allNames]);
@@ -4080,6 +4088,7 @@
       return 'level-elite';
     }
 
+    // Source de vérité = eloById. eloRatings est un miroir de secours.
     function getStoredElo(name) {
       const data = loadData();
       const rec = findPlayerRecord(name);
@@ -7334,7 +7343,7 @@
         <div class="stats-box"><div class="stats-value">${winPct.toFixed(1)}%</div><div class="stats-label">% Victoire</div></div>
       `;
 
-      document.getElementById('stats-chart-wrap').innerHTML = renderWinPctChart(series);
+      document.getElementById('stats-chart-wrap').innerHTML = renderWinPctChart(series, winPct);
       document.getElementById('stats-elo-chart-wrap').innerHTML = renderEloChart(eloSeriesConverted);
       const racketBlock = document.getElementById('stats-racket-block');
       if (racketBlock) racketBlock.innerHTML = renderRacketForm(name);
@@ -7360,7 +7369,7 @@
      * Petit graphique SVG "maison" (pas de librairie externe) montrant le % de victoire
      * tournoi par tournoi, dans l'ordre chronologique.
      */
-    function renderWinPctChart(series) {
+    function renderWinPctChart(series, weightedAvg) {
       if (!series || series.length === 0) {
         return '<div class="stats-chart-empty">Pas encore de données.</div>';
       }
@@ -7374,8 +7383,10 @@
       const xFor = i => leftPad + i * pointSpacing;
       const yFor = pct => topPad + ((100 - pct) / 100) * plotHeight;
 
-      // Moyenne des % de victoire (ligne de référence horizontale)
-      const avgPct = series.reduce((sum, s) => sum + s.pct, 0) / series.length;
+      // Moyenne pondérée (victoires ÷ matchs) — cohérente avec le tableau et la case % Victoire
+      const avgPct = (typeof weightedAvg === 'number' && !isNaN(weightedAvg))
+        ? weightedAvg
+        : series.reduce((sum, s) => sum + s.pct, 0) / series.length;
       const avgY = yFor(avgPct);
       const avgLabel = (Math.round(avgPct * 10) / 10).toFixed(1) + '%';
 
@@ -7400,7 +7411,7 @@
       `).join('');
 
       return `
-        <svg viewBox="0 0 ${width} ${height}" width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg">
+        <svg viewBox="0 0 ${width} ${height}" width="100%" height="auto" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg">
           ${gridLines}
           ${avgLine}
           <polyline points="${polylinePoints}" fill="none" stroke="#059669" stroke-width="2" />
@@ -7451,7 +7462,7 @@
       `).join('');
 
       return `
-        <svg viewBox="0 0 ${width} ${height}" width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg">
+        <svg viewBox="0 0 ${width} ${height}" width="100%" height="auto" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg">
           ${gridLines}
           <polyline points="${polylinePoints}" fill="none" stroke="#2563eb" stroke-width="2" />
           ${dotsAndLabels}
@@ -8450,8 +8461,14 @@
             tournaments: mergedTournaments,
             knownPlayers: mergedPlayers,
             eloRatings: mergedElo,
-            rackets: mergedRackets
+            rackets: mergedRackets,
+            eloRecalculated: false
           });
+          // Force recalcul unique depuis matchHistory → eloById + miroir eloRatings
+          recalculateAllEloFromHistory();
+          cloudData.eloRecalculated = true;
+          pushMetaToFirebase();
+          syncTournamentDiff(); // persiste aussi les ranking[].elo mis à jour
           cloudData.racketPhotos = { ...(cloudData.racketPhotos || {}), ...importedPhotos };
           cloudData._racketPhotosLoaded = true;
           const photoRef = getArchiveRef();
@@ -8464,7 +8481,7 @@
           renderArchiveForMode(5);
           renderArchiveForMode(4);
           if (document.getElementById('panel-fip').classList.contains('active')) renderFIP();
-          alert(`${newOnes.length} tournoi(s) importé(s) dans Firebase.\n${mergedPlayers.length} joueur(s) connus au total.`);
+          alert(`${newOnes.length} tournoi(s) importé(s) dans Firebase.\n${mergedPlayers.length} joueur(s) connus au total.\nELO recalculés et synchronisés (eloById).`);
           closeSettingsOverlay();
         } catch {
           alert('Fichier JSON invalide.');

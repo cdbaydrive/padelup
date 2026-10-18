@@ -1267,6 +1267,85 @@
       .racket-top-fields { width: 100%; }
     }
 
+  
+    /* Toggle glissant ON/OFF pour paires équilibrées */
+    .balance-toggle-row {
+      display: flex;
+      align-items: center;
+      justify-content: flex-start;
+      gap: 12px;
+      margin: 14px 0 16px;
+      padding: 12px 14px;
+      background: #f0fdf4;
+      border: 1px solid #bbf7d0;
+      border-radius: 8px;
+    }
+    .balance-toggle-label {
+      font-size: 0.95rem;
+      font-weight: 600;
+      color: var(--text);
+      margin: 0;
+    }
+    .slide-toggle {
+      position: relative;
+      display: inline-block;
+      width: 52px;
+      height: 28px;
+      flex-shrink: 0;
+    }
+    .slide-toggle input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+    .slide-toggle .slider {
+      position: absolute;
+      cursor: pointer;
+      inset: 0;
+      background: #cbd5e1;
+      border-radius: 28px;
+      transition: 0.2s;
+    }
+    .slide-toggle .slider:before {
+      position: absolute;
+      content: "";
+      height: 22px;
+      width: 22px;
+      left: 3px;
+      bottom: 3px;
+      background: white;
+      border-radius: 50%;
+      transition: 0.2s;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+    }
+    .slide-toggle input:checked + .slider {
+      background: var(--accent);
+    }
+    .slide-toggle input:checked + .slider:before {
+      transform: translateX(24px);
+    }
+    .slide-toggle .off-on {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 6px;
+      font-size: 0.62rem;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      color: #64748b;
+      pointer-events: none;
+      z-index: 1;
+    }
+    .slide-toggle input:checked + .slider + .off-on,
+    .slide-toggle input:checked + .slider ~ .off-on {
+      color: white;
+    }
+    .slide-toggle .off-on .on-txt { opacity: 0.35; }
+    .slide-toggle input:checked + .slider ~ .off-on .on-txt { opacity: 1; }
+    .slide-toggle input:checked + .slider ~ .off-on .off-txt { opacity: 0.35; }
+
   </style>
 
   <!-- Firebase SDK (compat) -->
@@ -1303,28 +1382,13 @@
       <h2>Entrer les noms des 4 joueurs</h2>
       <div class="grid-setup" id="player-inputs-4"></div>
 
-      <div style="margin: 16px 0 12px;">
-        <p style="font-size: 0.9rem; font-weight: 600; color: var(--court-bg); margin-bottom: 10px;">Composition des paires</p>
-        <div style="display: flex; flex-direction: column; gap: 10px;">
-          <label style="display: flex; align-items: flex-start; gap: 10px; cursor: pointer; font-size: 0.95rem; padding: 12px 14px; background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px;">
-            <input type="radio" name="pair-mode-4" id="pair-balanced-4" value="balanced" checked style="margin-top: 3px; width: 18px; height: 18px; accent-color: var(--accent);">
-            <span>
-              <strong>Paires équilibrées (ELO)</strong><br>
-              <span style="font-size: 0.82rem; color: var(--text-muted); line-height: 1.35;">
-                Tri par ELO décroissant → Paire A = J1 + J4 · Paire B = J2 + J3
-              </span>
-            </span>
-          </label>
-          <label style="display: flex; align-items: flex-start; gap: 10px; cursor: pointer; font-size: 0.95rem; padding: 12px 14px; background: #f8fafc; border: 1px solid var(--border); border-radius: 8px;">
-            <input type="radio" name="pair-mode-4" id="pair-free-4" value="free" style="margin-top: 3px; width: 18px; height: 18px; accent-color: var(--accent);">
-            <span>
-              <strong>Paires libres</strong><br>
-              <span style="font-size: 0.82rem; color: var(--text-muted); line-height: 1.35;">
-                Vous choisissez manuellement les deux paires après validation des noms.
-              </span>
-            </span>
-          </label>
-        </div>
+      <div class="balance-toggle-row">
+        <label class="slide-toggle">
+          <input type="checkbox" id="balanced-toggle-4" checked onchange="onBalanceToggle(4)">
+          <span class="slider"></span>
+          <span class="off-on"><span class="off-txt">OFF</span><span class="on-txt">ON</span></span>
+        </label>
+        <span class="balance-toggle-label">Paires équilibrées (% victoire)</span>
       </div>
 
       <div id="free-pairs-setup-4" class="hidden" style="margin-bottom: 16px; padding: 14px; background: #f8fafc; border: 1px solid var(--border); border-radius: 10px;">
@@ -1439,17 +1503,13 @@
     <div id="setup-card-8" class="card">
       <h2>Entrer les noms des 8 joueurs</h2>
       <div class="grid-setup" id="player-inputs-8"></div>
-      <div class="balanced-option" style="margin: 14px 0 18px; padding: 12px 14px; background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px;">
-        <label style="display: flex; align-items: flex-start; gap: 10px; cursor: pointer; font-size: 0.95rem; color: var(--text);">
-          <input type="checkbox" id="balanced-fip-8" checked style="margin-top: 3px; width: 18px; height: 18px; accent-color: var(--accent);">
-          <span>
-            <strong>Niveau Équilibré Padel Up</strong><br>
-            <span style="font-size: 0.82rem; color: var(--text-muted); line-height: 1.35;">
-              Utilise le classement Padel Up (pts/match) pour minimiser les écarts de force entre les équipes.
-              Les joueurs sans historique sont placés aléatoirement. Les partenaires restent uniques.
-            </span>
-          </span>
+      <div class="balance-toggle-row">
+        <label class="slide-toggle">
+          <input type="checkbox" id="balanced-toggle-8" checked>
+          <span class="slider"></span>
+          <span class="off-on"><span class="off-txt">OFF</span><span class="on-txt">ON</span></span>
         </label>
+        <span class="balance-toggle-label">Paires équilibrées (% victoire)</span>
       </div>
 
       <p class="choice-toggle-label">Points par match</p>
@@ -1642,17 +1702,13 @@
     <div id="setup-card-6" class="card">
       <h2>Entrer les noms des 6 joueurs</h2>
       <div class="grid-setup" id="player-inputs-6"></div>
-      <div class="balanced-option" style="margin: 14px 0 18px; padding: 12px 14px; background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px;">
-        <label style="display: flex; align-items: flex-start; gap: 10px; cursor: pointer; font-size: 0.95rem; color: var(--text);">
-          <input type="checkbox" id="balanced-fip-6" checked style="margin-top: 3px; width: 18px; height: 18px; accent-color: var(--accent);">
-          <span>
-            <strong>Niveau Équilibré Padel Up</strong><br>
-            <span style="font-size: 0.82rem; color: var(--text-muted); line-height: 1.35;">
-              Utilise le classement Padel Up (pts/match) pour minimiser les écarts de force entre les équipes.
-              Les joueurs sans historique sont placés aléatoirement. Les partenaires restent uniques.
-            </span>
-          </span>
+      <div class="balance-toggle-row">
+        <label class="slide-toggle">
+          <input type="checkbox" id="balanced-toggle-6" checked>
+          <span class="slider"></span>
+          <span class="off-on"><span class="off-txt">OFF</span><span class="on-txt">ON</span></span>
         </label>
+        <span class="balance-toggle-label">Paires équilibrées (% victoire)</span>
       </div>
 
       <p class="choice-toggle-label">Points par match</p>
@@ -1745,28 +1801,13 @@
       <h2>Match libre — 4 joueurs</h2>
       <div class="grid-setup" id="player-inputs-1"></div>
 
-      <div style="margin: 16px 0 12px;">
-        <p style="font-size: 0.9rem; font-weight: 600; color: var(--court-bg); margin-bottom: 10px;">Composition des paires</p>
-        <div style="display: flex; flex-direction: column; gap: 10px;">
-          <label style="display: flex; align-items: flex-start; gap: 10px; cursor: pointer; font-size: 0.95rem; padding: 12px 14px; background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px;">
-            <input type="radio" name="pair-mode-1" id="pair-balanced-1" value="balanced" checked style="margin-top: 3px; width: 18px; height: 18px; accent-color: var(--accent);">
-            <span>
-              <strong>Paires équilibrées (ELO)</strong><br>
-              <span style="font-size: 0.82rem; color: var(--text-muted); line-height: 1.35;">
-                Tri par ELO décroissant → Paire A = J1 + J4 · Paire B = J2 + J3
-              </span>
-            </span>
-          </label>
-          <label style="display: flex; align-items: flex-start; gap: 10px; cursor: pointer; font-size: 0.95rem; padding: 12px 14px; background: #f8fafc; border: 1px solid var(--border); border-radius: 8px;">
-            <input type="radio" name="pair-mode-1" id="pair-free-1" value="free" style="margin-top: 3px; width: 18px; height: 18px; accent-color: var(--accent);">
-            <span>
-              <strong>Paires libres</strong><br>
-              <span style="font-size: 0.82rem; color: var(--text-muted); line-height: 1.35;">
-                Vous choisissez manuellement les deux paires après validation des noms.
-              </span>
-            </span>
-          </label>
-        </div>
+      <div class="balance-toggle-row">
+        <label class="slide-toggle">
+          <input type="checkbox" id="balanced-toggle-1" checked onchange="onBalanceToggle(1)">
+          <span class="slider"></span>
+          <span class="off-on"><span class="off-txt">OFF</span><span class="on-txt">ON</span></span>
+        </label>
+        <span class="balance-toggle-label">Paires équilibrées (% victoire)</span>
       </div>
 
       <div id="free-pairs-setup-1" class="hidden" style="margin-bottom: 16px; padding: 14px; background: #f8fafc; border: 1px solid var(--border); border-radius: 10px;">
@@ -2130,6 +2171,7 @@
       "Entrer les noms des 6 joueurs": "Enter the 6 player names",
       "Composition des paires": "Pair setup",
       "Paires équilibrées (ELO)": "Balanced pairs (ELO)",
+      "Paires équilibrées (% victoire)": "Balanced pairs (% win rate)",
       "Tri par ELO décroissant → Paire A = J1 + J4 · Paire B = J2 + J3": "Sorted by ELO, highest first → Pair A = P1 + P4 · Pair B = P2 + P3",
       "Paires libres": "Custom pairs",
       "Vous choisissez manuellement les deux paires après validation des noms.": "You pick both pairs manually after confirming the names.",
@@ -5102,8 +5144,8 @@
 
     // ========== BALANCED (FIP) – mode 8 only ==========
 
-    /** Retourne { name: ptsPerMatch | null } à partir de l'archive FIP */
-    function getFipPtsPerMatchMap() {
+    /** Retourne { name: winPct (0-100) | null } à partir de l'archive FIP */
+    function getFipWinPctMap() {
       const archive = loadArchive();
       const stats = {};
       archive.forEach(t => {
@@ -5111,9 +5153,9 @@
           const key = playerKey(p.name);
           if (!key) return;
           if (!stats[key]) {
-            stats[key] = { points: 0, matches: 0 };
+            stats[key] = { wins: 0, matches: 0 };
           }
-          stats[key].points += (p.points || 0);
+          stats[key].wins += (p.wins || 0);
           const m = (p.played != null) ? p.played : ((p.wins || 0) + (p.ties || 0) + (p.losses || 0));
           stats[key].matches += m;
         });
@@ -5121,10 +5163,13 @@
       const map = {};
       Object.keys(stats).forEach(name => {
         const s = stats[name];
-        map[name] = s.matches > 0 ? (s.points / s.matches) : null;
+        map[name] = s.matches > 0 ? (s.wins / s.matches) * 100 : null;
       });
       return map;
     }
+
+    // Compatibilité : alias si d'anciens appels restent
+    function getFipPtsPerMatchMap() { return getFipWinPctMap(); }
 
     /** Score de déséquilibre d'une ordonance (indices = positions 0..7 dans la matrice) */
     function computeImbalanceScore(orderedPlayers, strengthMap, mode) {
@@ -5170,20 +5215,20 @@
      */
     function reorderPlayersBalancedFIP(playerList, mode) {
       const n = playerList.length;
-      const strengthMap = getFipPtsPerMatchMap();
+      const strengthMap = getFipWinPctMap();
       const withStrength = [];
       const withoutStrength = [];
 
       playerList.forEach(p => {
-        const ppm = strengthMap[playerKey(p.name)];
-        if (ppm != null) {
-          withStrength.push({ player: p, ppm });
+        const winPct = strengthMap[playerKey(p.name)];
+        if (winPct != null) {
+          withStrength.push({ player: p, winPct });
         } else {
           withoutStrength.push(p);
         }
       });
 
-      withStrength.sort((a, b) => b.ppm - a.ppm);
+      withStrength.sort((a, b) => b.winPct - a.winPct);
 
       if (withStrength.length < 2) {
         return shuffleArray(playerList).map((p, idx) => ({
@@ -5312,11 +5357,11 @@
         });
       }
 
-      // Mode 8 / 6 + Balanced FIP : réordonner les joueurs selon pts/match
+      // Mode 8 / 6 + Balanced : réordonner les joueurs selon % victoire
       let usedBalanced = false;
       if (mode === 8 || mode === 6) {
-        const balancedCheckbox = document.getElementById(`balanced-fip-${mode}`);
-        if (balancedCheckbox && balancedCheckbox.checked) {
+        const balancedToggle = document.getElementById(`balanced-toggle-${mode}`);
+        if (balancedToggle && balancedToggle.checked) {
           players = reorderPlayersBalancedFIP(players, mode);
           usedBalanced = true;
         }
@@ -5334,11 +5379,18 @@
 
       // ===== MODE 4 =====
       if (mode === 4) {
-        const isBalanced = document.getElementById('pair-balanced-4')?.checked;
+        const isBalanced = document.getElementById('balanced-toggle-4')?.checked;
         if (isBalanced) {
-          // Tri ELO décroissant
-          const sorted = [...players].sort((a, b) => b.elo - a.elo);
-          // Remap to original players array indices
+          // Tri % victoire décroissant (fallback ELO si pas d'historique)
+          const winMap = getFipWinPctMap();
+          const sorted = [...players].sort((a, b) => {
+            const wa = winMap[playerKey(a.name)];
+            const wb = winMap[playerKey(b.name)];
+            if (wa != null && wb != null) return wb - wa;
+            if (wa != null) return -1;
+            if (wb != null) return 1;
+            return (b.elo || 0) - (a.elo || 0);
+          });
           const idx = sorted.map(p => players.findIndex(pp => pp.id === p.id));
           pairs4 = { team1: [idx[0], idx[3]], team2: [idx[1], idx[2]] };
         } else {
@@ -9092,24 +9144,32 @@
           });
         }
 
-        const freeMode = document.getElementById('pair-free-1')?.checked;
-        if (freeMode) {
+        const isBalanced = document.getElementById('balanced-toggle-1')?.checked;
+        if (!isBalanced) {
           const a1 = parseInt(document.getElementById('free-a1-1')?.value, 10);
           const a2 = parseInt(document.getElementById('free-a2-1')?.value, 10);
           const b1 = parseInt(document.getElementById('free-b1-1')?.value, 10);
           const b2 = parseInt(document.getElementById('free-b2-1')?.value, 10);
           const idxs = [a1, a2, b1, b2];
           if (new Set(idxs).size !== 4 || idxs.some(x => isNaN(x))) {
-            alert('Chaque joueur doit apparaître exactement une fois dans les paires.\nOu choisissez « Paires équilibrées (ELO) ».');
+            alert('Chaque joueur doit apparaître exactement une fois dans les paires.\nOu activez « Paires équilibrées ».');
             return;
           }
           pairs1 = { team1: [a1, a2], team2: [b1, b2] };
         } else {
-          // Équilibré ELO : tri décroissant → A = 1+4, B = 2+3
-          const byElo = [...players].sort((a, b) => b.elo - a.elo);
+          // Équilibré % victoire : tri décroissant → A = 1+4, B = 2+3
+          const winMap = getFipWinPctMap();
+          const sorted = [...players].sort((a, b) => {
+            const wa = winMap[playerKey(a.name)];
+            const wb = winMap[playerKey(b.name)];
+            if (wa != null && wb != null) return wb - wa;
+            if (wa != null) return -1;
+            if (wb != null) return 1;
+            return (b.elo || 0) - (a.elo || 0);
+          });
           pairs1 = {
-            team1: [byElo[0].id, byElo[3].id],
-            team2: [byElo[1].id, byElo[2].id]
+            team1: [sorted[0].id, sorted[3].id],
+            team2: [sorted[1].id, sorted[2].id]
           };
         }
 
@@ -9314,8 +9374,8 @@
         const inp = document.getElementById(`p1-${i}`);
         if (inp) inp.value = p.name;
       });
-      document.getElementById('pair-free-1').checked = true;
-      document.getElementById('free-pairs-setup-1').classList.remove('hidden');
+      const t1 = document.getElementById('balanced-toggle-1'); if (t1) t1.checked = false;
+      document.getElementById('free-pairs-setup-1')?.classList.remove('hidden');
       populateFreePairSelects1();
       setPointsToggle(1, pointsPerMatch || 16);
       freeMatchScoreLocked = false;
@@ -9350,10 +9410,8 @@
 
       buildPlayerInputs(1);
       setPointsToggle(1, 16);
-      const pairBal = document.getElementById('pair-balanced-1');
-      if (pairBal) pairBal.checked = true;
-      const pairFree = document.getElementById('pair-free-1');
-      if (pairFree) pairFree.checked = false;
+      const bal1 = document.getElementById('balanced-toggle-1');
+      if (bal1) bal1.checked = true;
       document.getElementById('free-pairs-setup-1')?.classList.add('hidden');
 
       // S'assurer que le panel Matchs libres est actif
@@ -9619,7 +9677,7 @@
         const inp = document.getElementById(`p4-${i}`);
         if (inp) inp.value = p.name;
       });
-      document.getElementById('pair-free-4').checked = true;
+      const t4 = document.getElementById('balanced-toggle-4'); if (t4) t4.checked = false;
       document.getElementById('free-pairs-setup-4').classList.remove('hidden');
       populateFreePairSelects4();
     }
@@ -9673,17 +9731,22 @@
       else if (mode === 1) populateFreePairSelects1();
     }
 
+    function onBalanceToggle(mode) {
+      const toggle = document.getElementById(`balanced-toggle-${mode}`);
+      const freeBox = document.getElementById(`free-pairs-setup-${mode}`);
+      if (!freeBox || !toggle) return;
+      if (toggle.checked) {
+        freeBox.classList.add('hidden');
+      } else {
+        freeBox.classList.remove('hidden');
+        if (typeof refreshFreePairSelects === 'function') refreshFreePairSelects(mode);
+      }
+    }
+
     document.addEventListener('change', function(e) {
-      if (e.target && (e.target.name === 'pair-mode-4' || e.target.name === 'pair-mode-1')) {
-        const mode = e.target.name === 'pair-mode-1' ? 1 : 4;
-        const freeBox = document.getElementById(`free-pairs-setup-${mode}`);
-        if (!freeBox) return;
-        if (e.target.value === 'free') {
-          freeBox.classList.remove('hidden');
-          refreshFreePairSelects(mode);
-        } else {
-          freeBox.classList.add('hidden');
-        }
+      if (e.target && e.target.id && e.target.id.startsWith('balanced-toggle-')) {
+        const mode = parseInt(e.target.id.replace('balanced-toggle-', ''), 10);
+        if (mode === 1 || mode === 4) onBalanceToggle(mode);
       }
     });
 
@@ -9693,8 +9756,8 @@
       const m = e.target.id.match(/^p([14])-(\d)$/);
       if (!m) return;
       const mode = parseInt(m[1], 10);
-      const freeRadio = document.getElementById(`pair-free-${mode}`);
-      if (freeRadio && freeRadio.checked) {
+      const toggle = document.getElementById(`balanced-toggle-${mode}`);
+      if (toggle && !toggle.checked) {
         refreshFreePairSelects(mode);
       }
     });

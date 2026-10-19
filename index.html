@@ -2439,6 +2439,10 @@
       balanceMethod = method === 'grappe' ? 'grappe' : 'optim';
       try { localStorage.setItem('padelup_balance_method', balanceMethod); } catch (e) {}
       updateBalanceMethodUI();
+      // Persistance Firebase (partagée entre appareils / club)
+      if (typeof pushMetaToFirebase === 'function') {
+        pushMetaToFirebase();
+      }
     }
 
 
@@ -3700,6 +3704,7 @@
         eloById: cloudData.eloById || {},
         racketsById: stripPhotosFromRacketMap(cloudData.racketsById),
         eloRecalculated: !!cloudData.eloRecalculated,
+        balanceMethod: getBalanceMethod(),
         updatedAt: Date.now()
       };
     }
@@ -3882,6 +3887,7 @@
         eloById: (src.eloById && typeof src.eloById === 'object') ? src.eloById : {},
         racketsById: (src.racketsById && typeof src.racketsById === 'object') ? src.racketsById : {},
         eloRecalculated: !!src.eloRecalculated,
+        balanceMethod: (src.balanceMethod === 'grappe' || src.balanceMethod === 'optim') ? src.balanceMethod : getBalanceMethod(),
         updatedAt: Date.now()
       };
     }
@@ -3938,6 +3944,12 @@
       cloudData.eloById = (src.eloById && typeof src.eloById === 'object') ? src.eloById : {};
       cloudData.racketsById = (src.racketsById && typeof src.racketsById === 'object') ? src.racketsById : {};
       cloudData.eloRecalculated = !!src.eloRecalculated;
+      // Méthode d'équilibrage partagée (club) — priorité Firebase
+      if (src.balanceMethod === 'grappe' || src.balanceMethod === 'optim') {
+        balanceMethod = src.balanceMethod;
+        try { localStorage.setItem('padelup_balance_method', balanceMethod); } catch (e) {}
+        if (typeof updateBalanceMethodUI === 'function') updateBalanceMethodUI();
+      }
     }
 
     function upsertLocalTournament(t) {

@@ -4193,6 +4193,8 @@
         return;
       }
       if (archiveListener) return;
+      // Sécurité : toujours relire le club depuis l’URL avant d’attacher les listeners
+      if (typeof readClubFromUrl === 'function') readClubFromUrl();
       const ref = getArchiveRef();
       if (!ref) return;
       const token = ++archiveSyncToken;
@@ -9956,6 +9958,11 @@
     });
 
     // INIT
+    // Lire le club depuis l’URL AVANT toute synchro Firebase
+    // (sinon les listeners s’attachent sur clubFR même si l’URL demande clubDE)
+    readClubFromUrl();
+    updateClubChrome();
+
     buildPlayerInputs(8);
     buildPlayerInputs(6);
     buildPlayerInputs(5);
@@ -9966,7 +9973,7 @@
     // Session Auth (persistence locale) puis synchro archive
     startAuthListener();
 
-    // Démarrer la synchro archive Firebase (source de vérité)
+    // Démarrer la synchro archive Firebase (source de vérité) — club déjà connu
     startArchiveSync();
 
     // Rendu initial (sera rafraîchi dès le premier snapshot)
@@ -9979,15 +9986,12 @@
     // Journal d’accès : une entrée par visite (hors mode spectateur)
     setTimeout(logAccess, 600);
 
-    // Détection mode spectateur / migration
-    readClubFromUrl();
-    updateClubChrome();
+    // Langue + mode spectateur
     setLang(currentLang);
     new MutationObserver(() => { if (!applyingLang && currentLang === 'en') applyLang(); }).observe(document.body, { subtree: true, childList: true, characterData: true });
 
     (function checkUrlParams() {
       const params = new URLSearchParams(window.location.search);
-      readClubFromUrl();
       const liveId = params.get('live');
       if (liveId) {
         enterSpectatorMode(liveId);

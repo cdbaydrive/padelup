@@ -3306,7 +3306,16 @@
         return;
       }
       const org = typeof isOrganizer === 'function' && isOrganizer();
-      const visible = org ? list : list.filter(p => playerClubIds(p).includes(currentClubId));
+      // Pour un membre : joueurs du club courant OU qui apparaissent dans les tournois de ce club
+      const fromT = new Set();
+      if (!org) {
+        (loadArchive() || []).forEach(t => {
+          (t.ranking || []).forEach(p => { if (p && p.name) fromT.add(playerKey(p.name)); });
+        });
+      }
+      const visible = org ? list : list.filter(p =>
+        playerClubIds(p).includes(currentClubId) || fromT.has(playerKey(p.name))
+      );
       if (!visible.length) {
         host.innerHTML = '<p style="color:var(--text-muted); text-align:center;">Aucun joueur pour ce club.</p>';
         return;
@@ -4001,6 +4010,10 @@
       }
       if (canonicalizeCloudIdentities()) needsPush = true;
       if (assignStablePlayerIds()) needsPush = true;
+      // Si meta n'a pas fourni de joueurs connus (lecture refusée ou vide), les dériver des tournois chargés
+      if (!(cloudData.knownPlayers || []).length && (cloudData.tournaments || []).length) {
+        cloudData.knownPlayers = extractNamesFromTournaments(cloudData.tournaments);
+      }
       archiveReady = true;
       suppressArchivePush = false;
       extractEmbeddedRacketPhotos();
@@ -4012,10 +4025,12 @@
       refreshArchiveViews();
     }
 
-    function attachArchiveListeners(ref, token) {
+    function attachArchiveListeners(ref, token, preserveExisting) {
       suppressArchivePush = true;
-      cloudData.tournaments = [];
-      lastSyncedTournamentJson = new Map();
+      if (!preserveExisting) {
+        cloudData.tournaments = [];
+        lastSyncedTournamentJson = new Map();
+      }
       let metaReady = false;
       let toursReady = false;
       const seenDuringInitial = new Set();
@@ -4026,7 +4041,11 @@
       ref.child('meta').on('value', snap => {
         if (token !== archiveSyncToken) return;
         suppressArchivePush = true;
-        applyMetaSnapshot(snap.val());
+        const metaVal = snap.val();
+        // Si meta moderne vide mais qu'on a déjà hydraté du legacy, ne pas écraser
+        if (metaVal || !preserveExisting) {
+          applyMetaSnapshot(metaVal);
+        }
         if (!metaReady) {
           metaReady = true;
           maybeReady();
@@ -4034,7 +4053,14 @@
           suppressArchivePush = false;
           refreshArchiveViews();
         }
-      }, err => console.error('Meta listener error', err));
+      }, err => {
+        console.error('Meta listener error', err);
+        if (token !== archiveSyncToken) return;
+        if (!metaReady) {
+          metaReady = true;
+          maybeReady();
+        }
+      });
       ref.child('tournaments').on('child_added', snap => {
         if (token !== archiveSyncToken) return;
         const t = snap.val();
@@ -4119,6 +4145,47 @@
       }).catch(err => console.warn('Migration per-club', err));
     }
 
+    /**
+     * Hydrate cloudData depuis un snapshot legacy (tournaments en tableau + champs racine)
+     * quand la migration n'a pas encore été faite (membre ou club non migré).
+     * Les listeners modernes restent attachés pour les mises à jour futures.
+     */
+    function hydrateFromLegacySnapshot(val) {
+      if (!val || typeof val !== 'object') return false;
+      const alreadyModern = val.schemaVersion === 2 && val.meta && !Array.isArray(val.tournaments);
+      if (alreadyModern) return false;
+
+      const legacyList = Array.isArray(val.tournaments) ? val.tournaments : null;
+      const srcMeta = (val.meta && typeof val.meta === 'object') ? val.meta : val;
+
+      suppressArchivePush = true;
+      if (legacyList) {
+        cloudData.tournaments = legacyList.map(t => {
+          if (!t || typeof t !== 'object') return t;
+          if (t.id == null) t.id = tournamentFirebaseKey(t);
+          if (!t.clubId) t.clubId = currentClubId;
+          return t;
+        });
+      }
+      applyMetaSnapshot(srcMeta);
+      // Dériver knownPlayers des tournois si meta n'en a pas
+      if (!(cloudData.knownPlayers || []).length && (cloudData.tournaments || []).length) {
+        cloudData.knownPlayers = extractNamesFromTournaments(cloudData.tournaments);
+      }
+      // S'assurer que les joueurs de ce club sont marqués comme appartenant au club courant
+      (cloudData.knownPlayers || []).forEach(name => {
+        const rec = findPlayerRecord(name);
+        if (rec) {
+          const clubs = new Set(playerClubIds(rec));
+          clubs.add(currentClubId);
+          rec.clubs = [...clubs];
+        }
+      });
+      suppressArchivePush = false;
+      console.log('[archive] hydratation legacy pour', currentClubId, '—', (cloudData.tournaments || []).length, 'tournoi(s)');
+      return true;
+    }
+
     function startArchiveSync() {
       if (!initFirebase()) {
         console.warn('Firebase indisponible — archive cloud non démarrée');
@@ -4135,10 +4202,16 @@
         return ref.once('value');
       }).then(snap => {
         if (token !== archiveSyncToken || !snap) return;
-        return migrateLegacyArchiveIfNeeded(ref, snap.val());
-      }).then(() => {
+        const val = snap.val();
+        // Migration seulement pour organisateur ; sinon on hydrate depuis le legacy si besoin
+        if (isOrganizer()) {
+          return migrateLegacyArchiveIfNeeded(ref, val);
+        }
+        const hydrated = hydrateFromLegacySnapshot(val);
+        return Promise.resolve(hydrated);
+      }).then(hydrated => {
         if (token !== archiveSyncToken) return;
-        attachArchiveListeners(ref, token);
+        attachArchiveListeners(ref, token, !!hydrated);
       }).catch(err => {
         console.error('Archive sync error', err);
         archiveReady = true;
@@ -4934,7 +5007,18 @@
     }
 
     function getKnownPlayers() {
-      return (loadData().knownPlayers || []).filter(n => playerBelongsToClub(n, currentClubId));
+      const all = loadData().knownPlayers || [];
+      // Noms qui apparaissent dans les tournois du club courant → toujours inclus
+      const fromTournaments = new Set();
+      (loadArchive() || []).forEach(t => {
+        (t.ranking || []).forEach(p => {
+          if (p && p.name) fromTournaments.add(playerKey(p.name));
+        });
+      });
+      return all.filter(n => {
+        if (fromTournaments.has(playerKey(n))) return true;
+        return playerBelongsToClub(n, currentClubId);
+      });
     }
 
     function addKnownPlayers(names) {
